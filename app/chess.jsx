@@ -3,6 +3,7 @@
 'use client';
 
 import * as React from 'react';
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Alert, Box, Button, Collapse, Divider, Link, Paper, Snackbar, Stack, Typography } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2'; // Grid version 2
 import { LocalizationProvider } from '@mui/x-date-pickers';
@@ -64,7 +65,27 @@ function ChessFieldQuerying() {
     const [boardOrientation, setBoardOrientation] = React.useState('white');
     const playerLetter = boardOrientation[0];
 
-    const [game, setGame] = React.useState(() => new Chess());
+    // We include the PGN in the query string to allow bookmarking, and
+    // moreover, so that browser nav away and back doesn't lose all our
+    // state.  FIXME Also include boardOrientation, search parameters,
+    // and... hmmm, maybe I need to rethink this a bit.
+    const searchParams = useSearchParams();
+    const [game, justSetGame] = React.useState(() => {
+        const rv = new Chess();
+        if (searchParams.has("pgn")) {
+            rv.loadPgn(searchParams.get("pgn"));
+        }
+        return rv;
+    });
+    const router = useRouter();
+    function setGame(newGame) {
+        const params = new URLSearchParams({
+            pgn: newGame.pgn().replace(/ ?\. ?/g, '.')
+        });
+        router.replace("?" + params.toString(),
+                       {scroll: false, shallow: true});
+        justSetGame(newGame);
+    }
 
     function makeAMove(move) {
         const newGame = cloneDeep(game);
@@ -161,10 +182,10 @@ function ChessFieldQuerying() {
     const [dateRange, setDateRange] = React.useState(() =>
         [MinDate, MaxDate]);
 
-    const history = game.history({verbose: true});
+    const moveHistory = game.history({verbose: true});
     const queryParams = {
-        fen: history.length ? history[0].before : game.fen(),
-        play: history.map(x=>x.lan).join(','),
+        fen: moveHistory.length ? moveHistory[0].before : game.fen(),
+        play: moveHistory.map(x=>x.lan).join(','),
         topGames: 0,
         recentGames: 0,
     };
