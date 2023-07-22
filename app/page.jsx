@@ -1,10 +1,6 @@
-import * as React from 'react';
-import {AppBar, Box, Button, Container, CssBaseline, IconButton, Toolbar,
-        Paper, Typography} from '@mui/material';
+import { AppBar, Container, CssBaseline, IconButton, Toolbar, Typography } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChessField from './chess';
-
-//import styles from './page.module.css'
 
 export default function App() {
     return (

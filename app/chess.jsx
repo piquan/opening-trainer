@@ -1,25 +1,21 @@
-// The chessboard doesn't work with SSR, so this is a client component.
+// Much of what we use here doesn't work in SSR (even useState), so
+// tell next.js that this is client-only code.
 'use client';
 
 import * as React from 'react';
-import {Link, Collapse, Slider, Tooltip, Alert, Snackbar, Button, Box, Divider, Typography, ToggleButtonGroup, ToggleButton, Paper, Stack} from '@mui/material';
+import { Alert, Box, Button, Collapse, Divider, Link, Paper, Snackbar, Stack, Typography } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2'; // Grid version 2
-import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import axios from 'axios';
-import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc'
-dayjs.extend(utc)
 import { cloneDeep } from 'lodash-es';
 import { Chess } from 'chess.js'
 import { Chessboard } from "react-chessboard";
 
-const ValidRatings = [0, 1000, 1200, 1400, 1600, 1800,
-                      2000, 2200, 2500, Infinity];
-const MinDate = dayjs(new Date(1952, 0, 1));
-const MaxDate = dayjs(new Date(3000, 11, 1));
+import { MinDate, MaxDate, ValidRatings } from './utils.jsx';
+import { SearchSettings } from "./search-settings.jsx";
 
 function GetOpenings({queryKey}) {
     const params = queryKey[0];
@@ -67,7 +63,7 @@ export default function ChessField() {
 function ChessFieldQuerying() {
     const [boardOrientation, setBoardOrientation] = React.useState('white');
     const playerLetter = boardOrientation[0];
-    
+
     const [game, setGame] = React.useState(() => new Chess());
 
     function makeAMove(move) {
@@ -158,26 +154,12 @@ function ChessFieldQuerying() {
         setEndOfGameMessage(null);
     };
 
-    const [ratings, setRatings] = React.useState(() => [800, 1200]);
-    const handleRatings = (event, newRatings) => {
-        setRatings(newRatings);
-    };
-    const ratingsMarks =
-        [800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2500, 2800].map(
-            x => {return {"value": x, "label": x.toString()}});
-    ratingsMarks[0].label = '<';
-    ratingsMarks[ratingsMarks.length - 1].label = '>';
-    const minRating = ratings[0] == 800 ? 0 : ratings[0];
-    const maxRating = ratings[0] == 2800 ? Infinity : ratings[1];
-
+    const [ratings, setRatings] = React.useState(() =>
+        [0, 1200]);
     const [timeControls, setTimeControls] = React.useState(() =>
         ["blitz", "rapid", "classical", "correspondence"]);
-    const handleTimeControls = (event, newTimeControls) => {
-        setTimeControls(newTimeControls);
-    };
-
-    const [since, setSince] = React.useState(MinDate);
-    const [until, setUntil] = React.useState(MaxDate);
+    const [dateRange, setDateRange] = React.useState(() =>
+        [MinDate, MaxDate]);
 
     const history = game.history({verbose: true});
     const queryParams = {
@@ -186,9 +168,9 @@ function ChessFieldQuerying() {
         topGames: 0,
         recentGames: 0,
     };
-    if (minRating !== 0 || maxRating !== Infinity) {
+    if (ratings[0] !== 0 || ratings[1] !== Infinity) {
         const queryRatings = ValidRatings
-            .filter(r => (r >= minRating && r < maxRating))
+            .filter(r => (r >= ratings[0] && r < ratings[1]))
             .join(',');
         queryParams.ratings = queryRatings;
     }
@@ -246,9 +228,9 @@ function ChessFieldQuerying() {
     }
 
     const analysisUrl = `https://lichess.org/analysis/pgn/${encodeURIComponent(game.pgn())}?color=${boardOrientation}`;
-    
+
     return (<>
-        <Stack spacing={2} 
+        <Stack spacing={2}
                divider={<Divider orientation="vertical" flexItem />}>
             <Box xs={4}>
                 <Paper square elevation={12}>
@@ -278,59 +260,12 @@ function ChessFieldQuerying() {
                 <Divider textAlign="left">FEN</Divider>
                 <Typography>{game.fen()}</Typography>
             </Box>
-            <Stack xs={3}>
-                <Typography variant="h5">Search Settings</Typography>
-                <Divider textAlign="left" sx={{pt: 2}}>Ratings</Divider>
-                <Slider value={ratings} onChange={handleRatings} step={null}
-                        marks={ratingsMarks} min={800} max={2800}
-                        disableSwap/>
-                <Divider textAlign="left" sx={{pt: 2}}>Time Controls</Divider>
-                <ToggleButtonGroup value={timeControls}
-                                   onChange={handleTimeControls}
-                                   aria-label="time controls"
-                                   color="primary" fullWidth>
-                    <ToggleButton value="ultraBullet">
-                        <Tooltip arrow title="Under 30 seconds">
-                            <Typography>UltraBullet</Typography>
-                        </Tooltip>
-                    </ToggleButton>
-                    <ToggleButton value="bullet">
-                        <Tooltip arrow title="30 seconds &ndash; 3 minutes">
-                            <Typography>Bullet</Typography>
-                        </Tooltip>
-                    </ToggleButton>
-                    <ToggleButton value="blitz">
-                        <Tooltip arrow title="3 &ndash; 8 minutes">
-                            <Typography>Blitz</Typography>
-                        </Tooltip>
-                    </ToggleButton>
-                    <ToggleButton value="rapid">
-                        <Tooltip arrow title="8 &ndash; 25 minutes">
-                            <Typography>Rapid</Typography>
-                        </Tooltip>
-                    </ToggleButton>
-                    <ToggleButton value="classical">
-                        <Tooltip arrow title="Over 25 minutes">
-                            <Typography>Classical</Typography>
-                        </Tooltip>
-                    </ToggleButton>
-                    <ToggleButton value="correspondence">
-                        <Tooltip arrow title="Days">
-                            <Typography>Correspondence</Typography>
-                        </Tooltip>
-                    </ToggleButton>
-                </ToggleButtonGroup>
-                <Divider textAlign="left" sx={{pt: 2}}>Date Range</Divider>
-                <Stack direction="row" sx={{pt: 1}}>
-                    <DatePicker label="Since" value={since} onChange={setSince}
-                                views={['year', 'month']} disableFuture
-                                minDate={MinDate} maxDate={until} />
-                    <DatePicker label="Until" value={until} onChange={setUntil}
-                                views={['year', 'month']}
-                                minDate={since} maxDate={MaxDate} />
-                </Stack>
-            </Stack>
         </Stack>
+        <SearchSettings ratings={ratings} setRatings={setRatings}
+                        timeControls={timeControls}
+                        setTimeControls={setTimeControls}
+                        dateRange={dateRange}
+                        setDateRange={setDateRange} />
         <Snackbar open={!!endOfGameMessage} autoHideDuration={6000}
                   onClose={handleSnackbarClose}>
             <Alert severity="info" sx={{ width: '100%' }}
