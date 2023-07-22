@@ -62,30 +62,42 @@ export default function ChessField() {
 }
 
 function ChessFieldQuerying() {
-    const [boardOrientation, setBoardOrientation] = React.useState('white');
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
+    // We include the PGN and orientation in the query string to allow
+    // bookmarking, and moreover, so that browser nav away and back
+    // doesn't lose all our state.  We'll later include the db search
+    // params in cookies.
+    //
+    // FIXME Right now, we include this in the query string, but I'd
+    // rather have it in the fragment.  That's because each change of
+    // the query string invokes a reload from the server, and one that
+    // probably breaks CDN caching too.
+    const [boardOrientation, setBoardOrientation] = React.useState(() => {
+        return searchParams.get("color") === "black" ? "black" : "white";
+    });
     const playerLetter = boardOrientation[0];
 
-    // We include the PGN in the query string to allow bookmarking, and
-    // moreover, so that browser nav away and back doesn't lose all our
-    // state.  FIXME Also include boardOrientation, search parameters,
-    // and... hmmm, maybe I need to rethink this a bit.
-    const searchParams = useSearchParams();
-    const [game, justSetGame] = React.useState(() => {
+    const [game, setGame] = React.useState(() => {
         const rv = new Chess();
-        if (searchParams.has("pgn")) {
+        if (searchParams && searchParams.has("pgn")) {
             rv.loadPgn(searchParams.get("pgn"));
         }
         return rv;
     });
-    const router = useRouter();
-    function setGame(newGame) {
-        const params = new URLSearchParams({
-            pgn: newGame.pgn().replace(/ ?\. ?/g, '.')
-        });
-        router.replace("?" + params.toString(),
-                       {scroll: false, shallow: true});
-        justSetGame(newGame);
+
+    const params = new URLSearchParams(
+        searchParams === null ? "" : searchParams.toString());
+    const pgn = game.pgn().replace(/ ?\. ?/g, '.');
+    if (pgn === "") {
+        params.delete("pgn");
+    } else {
+        params.set("pgn", pgn);
     }
+    params.set("color", boardOrientation);
+    router.replace("?" + params.toString(),
+                   {scroll: false, shallow: true});
 
     function makeAMove(move) {
         const newGame = cloneDeep(game);
@@ -105,6 +117,7 @@ function ChessFieldQuerying() {
     const undoDisabled = !game.history().length;
     function handleUndo() {
         const newGame = cloneDeep(game);
+        // Undo enough to give the player a new move.
         do {
             if (!newGame.undo())
                 break;
@@ -242,8 +255,12 @@ function ChessFieldQuerying() {
     }
 
     const [opening, setOpening] = React.useState("");
-        if (status == "success" && data.opening) {
+    if (status == "success" && data.opening) {
         const newOpening = `[${data.opening.eco}] ${data.opening.name}`;
+        if (newOpening != opening)
+            setOpening(newOpening);
+    } else if (game.history().length === 0) {
+        const newOpening = "Starting Position";
         if (newOpening != opening)
             setOpening(newOpening);
     }
@@ -272,7 +289,9 @@ function ChessFieldQuerying() {
                 </Collapse>
             </Box>
             <Box xs={3} sx={{p: 1}}>
-                <Link href={analysisUrl}>Lichess Analysis Board</Link>
+                <a href={analysisUrl} target="_blank" rel="noopener">
+                    Lichess Analysis Board
+                </a>
                 <Typography>{numFound}</Typography>
                 <Divider textAlign="left">Opening</Divider>
                 <Typography>{opening}</Typography>
