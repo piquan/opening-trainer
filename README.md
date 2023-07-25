@@ -4,6 +4,12 @@ The program queries the Lichess Opening Explorer database for each board positio
 
 The database has well over two billion games, so is a great way to tell what your opponents are likely to play.  This is as opposed to playing against a bot, which… well, plays like a bot.
 
+## Online
+
+The latest version is likely to be unstable, like the rest of this
+project.  That said, you can access it at
+https://github.piquan.org/opening-trainer/
+
 ## Running locally
 
 To run the development server:
