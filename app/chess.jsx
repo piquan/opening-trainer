@@ -51,17 +51,7 @@ function randomMove(data) {
     throw new Error("randomMove did not terminate");
 }
 
-const queryClient = new QueryClient();
-
 export default function ChessField() {
-    return (<QueryClientProvider client={queryClient}>
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <ChessFieldQuerying/>
-        </LocalizationProvider>
-    </QueryClientProvider>);
-}
-
-function ChessFieldQuerying() {
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -303,7 +293,6 @@ function ChessFieldQuerying() {
                 <Typography>{game.fen()}</Typography>
             </Box>
         </Stack>
-        <SearchSettings />
         <Snackbar open={!!endOfGameMessage} autoHideDuration={6000}
                   onClose={handleSnackbarClose}>
             <Alert severity="info" sx={{ width: '100%' }}
