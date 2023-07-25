@@ -15,8 +15,8 @@ import { cloneDeep } from 'lodash-es';
 import { Chess } from 'chess.js'
 import { Chessboard } from "react-chessboard";
 
-import { MinDate, MaxDate, ValidRatings } from './utils.jsx';
-import { SearchSettings } from "./search-settings.jsx";
+import { MinDate, MaxDate, ValidRatings, SettingsContext } from "./settings.jsx";
+import { SearchSettings } from "./settings-page.jsx";
 
 function GetOpenings({queryKey}) {
     const params = queryKey[0];
@@ -188,12 +188,8 @@ function ChessFieldQuerying() {
         setEndOfGameMessage(null);
     };
 
-    const [ratings, setRatings] = React.useState(() =>
-        [0, 1200]);
-    const [timeControls, setTimeControls] = React.useState(() =>
-        ["blitz", "rapid", "classical", "correspondence"]);
-    const [dateRange, setDateRange] = React.useState(() =>
-        [MinDate, MaxDate]);
+    const {ratings, timeControls, dateRange} =
+          React.useContext(SettingsContext);
 
     const moveHistory = game.history({verbose: true});
     const queryParams = {
@@ -207,6 +203,12 @@ function ChessFieldQuerying() {
             .filter(r => (r >= ratings[0] && r < ratings[1]))
             .join(',');
         queryParams.ratings = queryRatings;
+    }
+    if (dateRange[0] !== MinDate) {
+        queryParams.since = dateRange[0];
+    }
+    if (dateRange[1] !== MaxDate) {
+        queryParams.until = dateRange[1];
     }
     queryParams.speeds = timeControls.join(',');
     const {data, status, error} = useQuery({
@@ -301,11 +303,7 @@ function ChessFieldQuerying() {
                 <Typography>{game.fen()}</Typography>
             </Box>
         </Stack>
-        <SearchSettings ratings={ratings} setRatings={setRatings}
-                        timeControls={timeControls}
-                        setTimeControls={setTimeControls}
-                        dateRange={dateRange}
-                        setDateRange={setDateRange} />
+        <SearchSettings />
         <Snackbar open={!!endOfGameMessage} autoHideDuration={6000}
                   onClose={handleSnackbarClose}>
             <Alert severity="info" sx={{ width: '100%' }}
