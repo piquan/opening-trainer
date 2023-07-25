@@ -1,7 +1,12 @@
+// createContext doesn't work in SSR, so this is client-side code.
+'use client';
+
+import * as React from 'react';
+
 import { Divider, Slider, Stack, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
 
-import { MinDate, MinRating, MaxDate, MaxRating, NumRatings, ValidRatings } from './utils.jsx';
+import { SettingsContext, UpdateSettingsContext, ValidRatings, NumRatings, MinRating, MaxRating, MinDate, MaxDate } from './settings.jsx';
 
 // Most of this revolves around replacing the lowest and highest values
 // with some that are more useful for display, and undoing that when
@@ -29,30 +34,34 @@ function ratingDisplayedToValid(displayed) {
     return displayed;
 }
 
-function RatingsSettings({ratings, setRatings}) {
+function RatingsSettings() {
+    const settings = React.useContext(SettingsContext);
+    const updateSettings = React.useContext(UpdateSettingsContext);
     const handleChange = (event, newRatings) => {
         if (newRatings[0] === newRatings[1]) {
             // Don't allow empty ranges.
             return;
         }
-        setRatings(newRatings.map(ratingDisplayedToValid));
+        updateSettings({ratings: newRatings.map(ratingDisplayedToValid)});
     };
 
-    return <Slider value={ratings} onChange={handleChange}
+    return <Slider value={settings.ratings} onChange={handleChange}
                    marks={ratingsTickMarks} step={null} disableSwap
                    min={minDisplayedRating} max={maxDisplayedRating} />
 }
 
-function TimeControlsSettings({timeControls, setTimeControls}) {
+function TimeControlsSettings() {
+    const settings = React.useContext(SettingsContext);
+    const updateSettings = React.useContext(UpdateSettingsContext);
     const handleChange = (event, newTimeControls) => {
         if (newTimeControls.length === 0) {
             // Don't allow empty time control sets
             return;
         }
-        setTimeControls(newTimeControls);
+        updateSettings({timeControls: newTimeControls});
     };
     return (
-        <ToggleButtonGroup value={timeControls} onChange={handleChange}
+        <ToggleButtonGroup value={settings.timeControls} onChange={handleChange}
                            aria-label="time controls" color="primary"
                            fullWidth>
             <ToggleButton value="ultraBullet">
@@ -89,42 +98,36 @@ function TimeControlsSettings({timeControls, setTimeControls}) {
     );
 }
 
-function DateRangeSettings({dateRange, setDateRange}) {
-    const [since, until] = dateRange;
+function DateRangeSettings() {
+    const settings = React.useContext(SettingsContext);
+    const updateSettings = React.useContext(UpdateSettingsContext);
+    const [since, until] = settings.dateRange;
 
     const setSince = function(event, newSince) {
-        setDateRange([newSince, until]);
+        updateSettings({dateRange: [newSince, until]});
     }
     const setUntil = function(event, newUntil) {
-        setDateRange([since, newUntil]);
+        updateSettings({dateRange: [since, newUntil]});
     }
 
     return (
         <Stack direction="row" sx={{pt: 1}}>
             <DatePicker label="Since" value={since} onChange={setSince}
                         views={['year', 'month']} disableFuture
-                        minDate={MinDate} maxDate={until} />
+                        minDate={settings.MinDate} maxDate={until} />
             <DatePicker label="Until" value={until} onChange={setUntil}
                         views={['year', 'month']}
-                        minDate={since} maxDate={MaxDate} />
+                        minDate={since} maxDate={settings.MaxDate} />
         </Stack>
     );
 }
 
-export function SearchSettings(
-    {ratings, setRatings, timeControls, setTimeControls,
-     dateRange, setDateRange}) {
+export function SearchSettings() {
     return (
         <Stack xs={3}>
             <Typography variant="h5">Search Settings</Typography>
             <Divider textAlign="left" sx={{pt: 2}}>Ratings</Divider>
-            <RatingsSettings ratings={ratings} setRatings={setRatings} />
-            <Divider textAlign="left" sx={{pt: 2}}>Time Controls</Divider>
-            <TimeControlsSettings timeControls={timeControls}
-                                  setTimeControls={setTimeControls} />
-            <Divider textAlign="left" sx={{pt: 2}}>Date Range</Divider>
-            <DateRangeSettings dateRange={dateRange}
-                               setDateRange={setDateRange} />
+            <RatingsSettings />
         </Stack>
     );
 }
