@@ -128,6 +128,10 @@ export function SearchSettings() {
             <Typography variant="h5">Search Settings</Typography>
             <Divider textAlign="left" sx={{pt: 2}}>Ratings</Divider>
             <RatingsSettings />
+            <Divider textAlign="left" sx={{pt: 2}}>Time Controls</Divider>
+            <TimeControlsSettings />
+            <Divider textAlign="left" sx={{pt: 2}}>Date Range</Divider>
+            <DateRangeSettings />
         </Stack>
     );
 }
