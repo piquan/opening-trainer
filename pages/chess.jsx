@@ -3,7 +3,6 @@
 'use client';
 
 import * as React from 'react';
-import { useRouter, useSearchParams } from 'next/navigation'
 import { Alert, Box, Button, Collapse, Divider, Link, Paper, Snackbar, Stack, Typography } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2'; // Grid version 2
 import { LocalizationProvider } from '@mui/x-date-pickers';
@@ -51,43 +50,91 @@ function randomMove(data) {
     throw new Error("randomMove did not terminate");
 }
 
-export default function ChessField() {
-    const router = useRouter();
-    const searchParams = useSearchParams();
+// This shouldn't be called during a render, only in a useEffect.
+function fragmentSearchParameters() {
+    if (typeof window === "undefined") {
+        return new URLSearchParams();
+    }
+    const hash = window.location.hash;
+    if (hash === "") {
+        // It's empty if the URL doesn't have a fragment identifier.
+        return new URLSearchParams();
+    }
+    // Otherwise, it starts with a #.
+    const fragment = hash.substr(1);
+    return new URLSearchParams(fragment);
+}
 
-    // We include the PGN and orientation in the query string to allow
+function fragmentGet(key) {
+    return fragmentSearchParameters().get(key);
+}
+
+function fragmentSet(key, value) {
+    const usp = fragmentSearchParameters();
+    if (usp.get(key) === value.toString()) {
+        return;
+    }
+    usp.set(key, value);
+    const newFragment = usp.toString();
+    const url = new URL(window.location);
+    url.hash = "#" + newFragment;
+    history.replaceState(history.state, "", url.toString());
+}
+
+function fragmentDel(key) {
+    const usp = fragmentSearchParameters();
+    if (!usp.has(key)) {
+        return;
+    }
+    usp.delete(key);
+    const newFragment = usp.toString();
+    const url = new URL(window.location);
+    // Leave the # in place even if there's nothing after it; if we
+    // remove the #, then it triggers a load (at least on Chrome).
+    url.hash = "#" + newFragment;
+    history.replaceState(history.state, "", url.toString());
+}
+
+export default function ChessField() {
+    // We include the PGN and orientation in the URL fragment to allow
     // bookmarking, and moreover, so that browser nav away and back
     // doesn't lose all our state.  We'll later include the db search
     // params in cookies.
-    //
-    // FIXME Right now, we include this in the query string, but I'd
-    // rather have it in the fragment.  That's because each change of
-    // the query string invokes a reload from the server, and one that
-    // probably breaks CDN caching too.
     const [boardOrientation, setBoardOrientation] = React.useState(() => {
-        return searchParams.get("color") === "black" ? "black" : "white";
+        return fragmentGet("color") === "black" ? "black" : "white";
     });
     const playerLetter = boardOrientation[0];
 
-    const [game, setGame] = React.useState(() => {
-        const rv = new Chess();
-        if (searchParams && searchParams.has("pgn")) {
-            rv.loadPgn(searchParams.get("pgn"));
+    const [game, setGame] = React.useState(() => {return new Chess();});
+    // After the first render, update the game with the fragment's
+    // PGN.  Give it an explicit empty dependency, because if we do
+    // this on subsequent renders, it will fight with makeAMove trying
+    // to replace the game.
+    React.useEffect(() => {
+        const pgn = fragmentGet("pgn");
+        if (pgn === null) {
+            return;
         }
-        return rv;
-    });
+        const newGame = new Chess();
+        newGame.loadPgn(pgn);
+        setGame(newGame);
+    }, []);
 
-    const params = new URLSearchParams(
-        searchParams === null ? "" : searchParams.toString());
-    const pgn = game.pgn().replace(/ ?\. ?/g, '.');
-    if (pgn === "") {
-        params.delete("pgn");
-    } else {
-        params.set("pgn", pgn);
-    }
-    params.set("color", boardOrientation);
-    router.replace("?" + params.toString(),
-                   {scroll: false, shallow: true});
+    // Every time the game changes, update the fragment to include the
+    // new state.
+    React.useEffect(() => {
+        const newPgn = game.pgn().replace(/ ?\. ?/g, '.');
+        if (newPgn === "") {
+            fragmentDel("pgn");
+        } else {
+            fragmentSet("pgn", newPgn);
+        }
+        if (boardOrientation === "white" && newPgn === "") {
+            fragmentDel("color");
+        } else {
+            fragmentSet("color", boardOrientation);
+        }
+    }, [game, boardOrientation]);
 
     function makeAMove(move) {
         const newGame = cloneDeep(game);
