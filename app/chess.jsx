@@ -147,6 +147,8 @@ export default function ChessField() {
                !game.isGameOver();
     }
 
+    // FIXME Make a more general way to handle snackbar messages
+    // throughout the app.
     const [endOfGameMessage, setEndOfGameMessage] = React.useState(null);
     const [showedEndOfGameMessage, setShowedEndOfGameMessage] =
         React.useState(false);
@@ -259,7 +261,7 @@ export default function ChessField() {
 
     const analysisUrl = `https://lichess.org/analysis/pgn/${encodeURIComponent(game.pgn())}?color=${boardOrientation}`;
 
-    return (<>
+    return (
         <Stack spacing={2}
                divider={<Divider orientation="vertical" flexItem />}>
             <Box xs={4}>
@@ -272,12 +274,14 @@ export default function ChessField() {
                 <Stack spacing={2} direction="row" sx={{mt:2}}>
                     <Button variant="contained" disabled={undoDisabled}
                             onClick={handleUndo}>Undo</Button>
-                    <Button variant="contained" onClick={handleFlip}>Flip</Button>
-                    <Button variant="contained" onClick={handleReset}>Reset</Button>
+                    <Button variant="contained"
+                            onClick={handleFlip}>Flip</Button>
+                    <Button variant="contained"
+                            onClick={handleReset}>Reset</Button>
                 </Stack>
                 <Collapse in={noMoves}>
                     <Alert severity="info">There are no moves are in
-                        the database from this position.</Alert>
+                    the database from this position.</Alert>
                 </Collapse>
             </Box>
             <Box xs={3} sx={{p: 1}}>
@@ -292,13 +296,13 @@ export default function ChessField() {
                 <Divider textAlign="left">FEN</Divider>
                 <Typography>{game.fen()}</Typography>
             </Box>
+            <Snackbar open={!!endOfGameMessage} autoHideDuration={6000}
+                      onClose={handleSnackbarClose}>
+                <Alert severity="info" sx={{ width: '100%' }}
+                       onClose={handleSnackbarClose}>
+                    {endOfGameMessage}
+                </Alert>
+            </Snackbar>
         </Stack>
-        <Snackbar open={!!endOfGameMessage} autoHideDuration={6000}
-                  onClose={handleSnackbarClose}>
-            <Alert severity="info" sx={{ width: '100%' }}
-                   onClose={handleSnackbarClose}>
-                {endOfGameMessage}
-            </Alert>
-        </Snackbar>
-    </>);
+    );
 }
