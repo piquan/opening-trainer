@@ -14,11 +14,11 @@ export default function Document({ Component, pageProps }) {
             <Head>
                 <meta name="description"
                       content="Practice openings based on actual Lichess games" />
-                <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-                <link rel="icon" type="image/png" href="/favicon.png" />
-                <link rel="shortcut icon" href="/favicon.ico" />
-                <link rel="icon" type="image/png" href="/favicon.png" />
-                <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+                <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+                <link rel="icon" type="image/png" href="favicon.png" />
+                <link rel="shortcut icon" href="favicon.ico" />
+                <link rel="icon" type="image/png" href="favicon.png" />
+                <link rel="icon" type="image/svg+xml" href="favicon.svg" />
             </Head>
             <body>
                 <Main />
