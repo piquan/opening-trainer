@@ -5,17 +5,16 @@ import * as React from 'react';
 import { AppBar, Container, Drawer, IconButton, Toolbar, Typography } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 
-import ChessField from './chess';
-import { SettingsContexts } from './settings.jsx';
-import { SearchSettings } from './settings-page.jsx';
+import ChessField from '../components/chess';
+import { SettingsContexts } from '../components/settings';
+import { SearchSettings } from '../components/settings-page';
 
 export default function App() {
     const [settingsOpen, setSettingsOpen] = React.useState(false);
     const onSettingsToggle = () => setSettingsOpen(s => !s);
 
     return (
-        <>
-            <SettingsContexts>
+        <SettingsContexts>
             <AppBar position="static">
                 <Toolbar>
                     <Typography variant="h6" sx={{ flexGrow: 1 }}>
@@ -37,7 +36,6 @@ export default function App() {
             <Container maxWidth="sm">
                 <ChessField />
             </Container>
-            </SettingsContexts>
-        </>
+        </SettingsContexts>
     );
 }

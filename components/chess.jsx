@@ -14,8 +14,8 @@ import { cloneDeep } from 'lodash-es';
 import { Chess } from 'chess.js'
 import { Chessboard } from "react-chessboard";
 
-import { MinDate, MaxDate, ValidRatings, SettingsContext } from "./settings.jsx";
-import { SearchSettings } from "./settings-page.jsx";
+import { MinDate, MaxDate, ValidRatings, SettingsContext } from "./settings";
+import { SearchSettings } from "./settings-page";
 
 function GetOpenings({queryKey}) {
     const params = queryKey[0];

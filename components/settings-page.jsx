@@ -6,7 +6,7 @@ import * as React from 'react';
 import { Divider, Slider, Stack, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
 
-import { SettingsContext, UpdateSettingsContext, ValidRatings, NumRatings, MinRating, MaxRating, MinDate, MaxDate } from './settings.jsx';
+import { SettingsContext, UpdateSettingsContext, ValidRatings, NumRatings, MinRating, MaxRating, MinDate, MaxDate } from './settings';
 
 // Most of this revolves around replacing the lowest and highest values
 // with some that are more useful for display, and undoing that when
