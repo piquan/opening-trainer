@@ -1,0 +1,1 @@
+../node_modules/stockfish/src/stockfish-nnue-16-single.js

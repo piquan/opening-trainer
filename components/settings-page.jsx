@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 
-import { Divider, Slider, Stack, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material';
+import { Divider, FormControlLabel, FormGroup, Slider, Stack, Switch, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
 
 import { SettingsContext, UpdateSettingsContext, ValidRatings, NumRatings, MinRating, MaxRating, MinDate, MaxDate } from './settings';
@@ -32,6 +32,16 @@ function ratingDisplayedToValid(displayed) {
         return MaxRating;
     }
     return displayed;
+}
+
+function EvalBarSetting() {
+    const settings = React.useContext(SettingsContext);
+    const updateSettings = React.useContext(UpdateSettingsContext);
+
+    return (
+        <Switch checked={settings.evaluation}
+                onChange={e => updateSettings({evaluation: e.target.checked})} />
+    );
 }
 
 function RatingsSettings() {
@@ -125,6 +135,11 @@ function DateRangeSettings() {
 export function SearchSettings() {
     return (
         <Stack xs={3}>
+            <Typography variant="h5">App Settings</Typography>
+            <FormGroup>
+                <FormControlLabel control={<EvalBarSetting/>}
+                                  label="Eval Bar" />
+            </FormGroup>
             <Typography variant="h5">Search Settings</Typography>
             <Divider textAlign="left" sx={{pt: 2}}>Ratings</Divider>
             <RatingsSettings />

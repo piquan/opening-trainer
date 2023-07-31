@@ -23,6 +23,7 @@ const initialSettings = {
     ratings: [0, 1200],
     timeControls: ["blitz", "rapid", "classical", "correspondence"],
     dateRange: [MinDate, MaxDate],
+    evaluation: true,
 };
 
 export function SettingsContexts({children}) {

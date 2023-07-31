@@ -1,0 +1,4 @@
+.EvalBarInnerBar {
+    transition-timing-function: ease-in-out;
+    transition-duration: 0.5s;
+}

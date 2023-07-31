@@ -16,6 +16,8 @@ import { Chessboard } from "react-chessboard";
 
 import { MinDate, MaxDate, ValidRatings, SettingsContext } from "./settings";
 import { SearchSettings } from "./settings-page";
+import { StockfishManager } from "./stockfish";
+import { EvalBar } from "./evalbar";
 
 function GetOpenings({queryKey}) {
     const params = queryKey[0];
@@ -227,8 +229,45 @@ export default function ChessField() {
         setEndOfGameMessage(null);
     };
 
-    const {ratings, timeControls, dateRange} =
+    const {ratings, timeControls, dateRange, evaluation} =
           React.useContext(SettingsContext);
+
+    const sfManager = React.useMemo(() => new StockfishManager(), []);
+    const stockfishInfo = React.useSyncExternalStore(
+        sfManager.subscribe,
+        sfManager.getInfo,
+        () => {return sfManager.serverInfo;});
+    React.useEffect(() => {
+        // FIXME Right now, we just stop displaying the eval and
+        // sending board updates.  We don't actually stop the
+        // current evaluation.
+        if (evaluation) {
+            const moves = game.history({verbose: true}).map(m => m.lan);
+            sfManager.setPosition("startpos moves " + moves.join(" "));
+        }
+    }, [game, evaluation, sfManager]);
+    const posEval = (
+        typeof stockfishInfo === "undefined" ? 0 :
+        'mate' in stockfishInfo ? (
+            // We use 1/ to distinguish between +/- 0 in a checkmate.
+            (1 / stockfishInfo.mate < 0) ? -Infinity : Infinity) :
+        'pawns' in stockfishInfo ? stockfishInfo.pawns :
+        0);
+    const posEvalStr = (
+        typeof stockfishInfo === "undefined" ? "" :
+        ('mate' in stockfishInfo ? (
+            (1 / stockfishInfo.mate < 0) ?
+            "M-" + stockfishInfo.mate :
+            "M" + stockfishInfo.mate) :
+         'pawns' in stockfishInfo ? stockfishInfo.pawns.toFixed(1) :
+         ""));
+    const evaluationSection =
+        evaluation ? (
+            <Stack direction="row" spacing={1}>
+                <Typography>{posEvalStr}</Typography>
+                <EvalBar value={posEval} />
+            </Stack>) :
+        <></>;
 
     const moveHistory = game.history({verbose: true});
     const queryParams = {
@@ -328,9 +367,10 @@ export default function ChessField() {
                 </Stack>
                 <Collapse in={noMoves}>
                     <Alert severity="info">There are no moves are in
-                    the database from this position.</Alert>
+                        the database from this position.</Alert>
                 </Collapse>
             </Box>
+            {evaluationSection}
             <Box xs={3} sx={{p: 1}}>
                 <a href={analysisUrl} target="_blank" rel="noopener">
                     Lichess Analysis Board
