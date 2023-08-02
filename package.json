@@ -16,16 +16,17 @@
     "chess.js": "^1.0.0-beta.6",
     "dayjs": "^1.11.9",
     "lodash-es": "^4.17.21",
-    "stockfish": "^16.0.0",
     "react": "^18.2.0",
     "react-chessboard": "^4.0.1",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
+    "stockfish": "^16.0.0",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "npm run generate:favicon && react-scripts build",
+    "generate:favicon": "node favicon-builder.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -46,5 +47,9 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "png-to-ico": "^2.1.8",
+    "sharp": "^0.32.4"
   }
 }
