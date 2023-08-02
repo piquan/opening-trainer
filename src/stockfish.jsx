@@ -45,8 +45,6 @@ export function StockfishManager() {
     // also can read the latest info.
     var info = {};
     const oninfo = [];
-    // This is the initial info, used for server-side rendering.
-    var serverInfo = {};
 
     function sendCommand (msg) {
         console.debug("[%s] stockfish> %s", state, msg);
@@ -159,6 +157,8 @@ export function StockfishManager() {
 
     // We've now set ourselves, so we can (in the right order) start
     // the worker.
+    console.log("Worker", Worker);
+    console.log("worker", worker);
     if (worker !== null) {
         worker.onmessage = (e => handleMessage(e.data));
         sendCommand("uci");
