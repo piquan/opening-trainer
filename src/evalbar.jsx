@@ -1,4 +1,4 @@
-import * as React from 'react';
+import PropTypes from 'prop-types';
 import { useTheme } from '@mui/material/styles';
 
 import styles from './evalbar.module.css';
@@ -50,3 +50,6 @@ export function EvalBar({value}) {
                   stroke={theme.palette.primary.main} />
         </svg>);
 }
+EvalBar.propTypes = {
+    value: PropTypes.number.isRequired,
+};

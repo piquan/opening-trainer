@@ -2,6 +2,7 @@
 'use client';
 
 import * as React from 'react';
+import PropTypes from 'prop-types';
 
 import dayjs from 'dayjs';
 
@@ -38,3 +39,6 @@ export function SettingsContexts({children}) {
                </UpdateSettingsContext.Provider>
            </SettingsContext.Provider>;
 }
+SettingsContexts.propTypes = {
+    children: PropTypes.element,
+};

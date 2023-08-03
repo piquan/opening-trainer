@@ -185,6 +185,7 @@ export default function ChessField() {
         }
     }
 
+    /*eslint no-unused-vars: ["error", {"args": "none"}]*/
     function isDraggablePiece({ piece, sourceSquare }) {
         // The piece is like "wP" for white pawn.
         return piece[0] === playerLetter &&
@@ -223,7 +224,7 @@ export default function ChessField() {
             return;
         }
         setEndOfGameMessage(null);
-    };
+    }
 
     const {ratings, timeControls, dateRange, evaluation} =
           React.useContext(SettingsContext);
@@ -370,7 +371,7 @@ export default function ChessField() {
             </Box>
             {evaluationSection}
             <Box xs={3} sx={{p: 1}}>
-                <a href={analysisUrl} target="_blank" rel="noopener noreferrer">
+                <a href={analysisUrl} target="_blank" rel="noreferrer">
                     Lichess Analysis Board
                 </a>
                 <Typography>{numFound}</Typography>
