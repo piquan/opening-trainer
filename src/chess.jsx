@@ -1,7 +1,3 @@
-// Much of what we use here doesn't work in SSR (even useState), so
-// tell next.js that this is client-only code.
-'use client';
-
 import * as React from 'react';
 import { Alert, Box, Button, Collapse, Divider, Paper, Snackbar, Stack, Typography } from '@mui/material';
 

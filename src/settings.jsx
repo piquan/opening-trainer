@@ -1,6 +1,3 @@
-// createContext doesn't work in SSR, so this is client-side code.
-'use client';
-
 import * as React from 'react';
 import PropTypes from 'prop-types';
 
