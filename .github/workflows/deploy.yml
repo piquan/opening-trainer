@@ -40,7 +40,7 @@ jobs:
         id: setup-pages
         uses: actions/configure-pages@v3
       - name: Set base URL
-        run: sed -ie "s@//BASE@base:"\\"${{steps.setup-pages.outputs.base_url}}\\" vite.config.js
+        run: sed -ie "s@//BASE@base:"\\"${{steps.setup-pages.outputs.base_url}}\\"@ vite.config.js
       - name: Restore cache
         uses: actions/cache@v3
         with:
