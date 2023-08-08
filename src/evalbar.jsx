@@ -25,7 +25,7 @@ export function EvalBar({value, boardOrientation}) {
     const theme = useTheme();
 
     const barTransform =
-          (boardOrientation === "white" ? "none" :
+          (boardOrientation === "white" ? "translate(0 0)" :
            "translate(0 480) scale(1 -1)");
 
     // We say the viewbox is 30x480 (the approximate size), but we're
@@ -59,7 +59,7 @@ export function EvalBar({value, boardOrientation}) {
                   stroke={theme.palette.primary.main} />
             <line x1="0" y1="420" x2="5" y2="420"
                   stroke={theme.palette.primary.main} />
-            <text x="2" y="475" font-size="6px" stroke="none"
+            <text x="2" y="475" fontSize="6px" stroke="none"
                   fill={theme.palette.primary.main}>
                 {evalFmt}
             </text>
