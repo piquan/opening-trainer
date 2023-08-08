@@ -15,7 +15,7 @@ const kEngine = 'stockfish-nnue-16-single.js';
 // may not respond quickly.  But we really don't care about doing a lot
 // of deep analysis anyway: we're looking for a basic sense of when the
 // opening went off the rails.
-const kGoDepthCommand = "go depth 20";
+const kGoDepthCommand = "go depth 10";
 
 export function StockfishManager() {
     // Recent versions of webpack give us ways to use webworkers in
@@ -157,8 +157,6 @@ export function StockfishManager() {
 
     // We've now set ourselves, so we can (in the right order) start
     // the worker.
-    console.log("Worker", Worker);
-    console.log("worker", worker);
     if (worker !== null) {
         worker.onmessage = (e => handleMessage(e.data));
         sendCommand("uci");

@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { Alert, Box, Button, Collapse, Divider, Paper, Snackbar, Stack, Typography } from '@mui/material';
+import Grid from '@mui/material/Unstable_Grid2';
 
 import { useQuery } from '@tanstack/react-query'
 import axios from 'axios';
@@ -239,12 +240,11 @@ export default function ChessField() {
             sfManager.setPosition("startpos moves " + moves.join(" "));
         }
     }, [game, evaluation, sfManager]);
-    console.log("Updated info: %o", stockfishInfo);
     const posEval = (
         typeof stockfishInfo === "undefined" ? 0 :
         'mate' in stockfishInfo ? (
             // We use 1/ to distinguish between +/- 0 in a checkmate.
-            (1 / stockfishInfo.mate < 0) ? -Infinity : Infinity) :
+            (1 / stockfishInfo.mate < 0) ? Infinity : -Infinity) :
         'pawns' in stockfishInfo ? stockfishInfo.pawns :
         0);
     const posEvalStr = (
@@ -255,14 +255,10 @@ export default function ChessField() {
             "M" + stockfishInfo.mate) :
          'pawns' in stockfishInfo ? stockfishInfo.pawns.toFixed(1) :
          ""));
-    console.log("Evaluation: %o %o %o", evaluation, posEvalStr, posEval);
-    const evaluationSection =
-        evaluation ? (
-            <Stack direction="row" spacing={1}>
-                <Typography>{posEvalStr}</Typography>
-                <EvalBar value={posEval} />
-            </Stack>) :
-        <></>;
+    const evalBar = (
+        evaluation ?
+            <EvalBar value={posEval} boardOrientation={boardOrientation} /> :
+        <></>);
 
     const moveHistory = game.history({verbose: true});
     const queryParams = {
@@ -347,10 +343,17 @@ export default function ChessField() {
                divider={<Divider orientation="vertical" flexItem />}>
             <Box xs={4}>
                 <Paper square elevation={12}>
-                    <Chessboard boardOrientation={boardOrientation}
-                                isDraggablePiece={isDraggablePiece}
-                                position={game.fen()} onPieceDrop={onDrop}
-                    />
+                    <Grid container columns={33}>
+                        <Grid xs={evaluation ? 1 : 0}>
+                            {evalBar}
+                        </Grid>
+                        <Grid xs={evaluation ? 32 : 33}>
+                            <Chessboard boardOrientation={boardOrientation}
+                                        isDraggablePiece={isDraggablePiece}
+                                        position={game.fen()}
+                                        onPieceDrop={onDrop} />
+                        </Grid>
+                    </Grid>
                 </Paper>
                 <Stack spacing={2} direction="row" sx={{mt:2}}>
                     <Button variant="contained" disabled={undoDisabled}
@@ -365,7 +368,6 @@ export default function ChessField() {
                         the database from this position.</Alert>
                 </Collapse>
             </Box>
-            {evaluationSection}
             <Box xs={3} sx={{p: 1}}>
                 <a href={analysisUrl} target="_blank" rel="noreferrer">
                     Lichess Analysis Board
