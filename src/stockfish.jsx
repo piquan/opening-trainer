@@ -15,7 +15,7 @@ const kEngine = 'stockfish-nnue-16-single.js';
 // may not respond quickly.  But we really don't care about doing a lot
 // of deep analysis anyway: we're looking for a basic sense of when the
 // opening went off the rails.
-const kGoDepthCommand = "go depth 10";
+const kGoDepthCommand = "go depth 20";
 
 export function StockfishManager() {
     // Recent versions of webpack give us ways to use webworkers in
