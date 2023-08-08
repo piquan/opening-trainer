@@ -43,13 +43,13 @@ function EvalDepthSetting() {
     const handleInputChange = e => updateEvalDepth(Number(e.target.value));
 
     return <Grid container spacing={2} alignItems="center">
-               <Grid item xs>
+               <Grid xs>
                    <Slider value={evalDepth}
                            onChange={handleSliderChange}
                            step={1} min={0} max={30}
                            valueLabelDisplay="auto" />
                </Grid>
-               <Grid item>
+               <Grid>
                    <Input value={evalDepth} size="small"
                           inputProps={{step:1, min:0, max:30, type: 'number'}}
                           onChange={handleInputChange} />
