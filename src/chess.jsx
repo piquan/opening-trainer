@@ -223,7 +223,7 @@ export default function ChessField() {
         setEndOfGameMessage(null);
     }
 
-    const {ratings, timeControls, dateRange, evaluation} =
+    const {ratings, timeControls, dateRange, evalDepth} =
           React.useContext(SettingsContext);
 
     const sfManager = React.useMemo(() => new StockfishManager(), []);
@@ -232,14 +232,10 @@ export default function ChessField() {
         sfManager.getInfo,
         () => {return sfManager.serverInfo;});
     React.useEffect(() => {
-        // FIXME Right now, we just stop displaying the eval and
-        // sending board updates.  We don't actually stop the current
-        // evaluation.
-        if (evaluation) {
-            const moves = game.history({verbose: true}).map(m => m.lan);
-            sfManager.setPosition("startpos moves " + moves.join(" "));
-        }
-    }, [game, evaluation, sfManager]);
+        sfManager.setEvalDepth(evalDepth);
+        const moves = game.history({verbose: true}).map(m => m.lan);
+        sfManager.setPosition("startpos moves " + moves.join(" "));
+    }, [game, evalDepth, sfManager]);
     const posEval = (
         typeof stockfishInfo === "undefined" ? 0 :
         'mate' in stockfishInfo ? (
@@ -247,16 +243,8 @@ export default function ChessField() {
             (1 / stockfishInfo.mate < 0) ? Infinity : -Infinity) :
         'pawns' in stockfishInfo ? stockfishInfo.pawns :
         0);
-    const posEvalStr = (
-        typeof stockfishInfo === "undefined" ? "" :
-        ('mate' in stockfishInfo ? (
-            (1 / stockfishInfo.mate < 0) ?
-            "M-" + stockfishInfo.mate :
-            "M" + stockfishInfo.mate) :
-         'pawns' in stockfishInfo ? stockfishInfo.pawns.toFixed(1) :
-         ""));
     const evalBar = (
-        evaluation ?
+        evalDepth > 0 ?
             <EvalBar value={posEval} boardOrientation={boardOrientation} /> :
         <></>);
 
@@ -344,10 +332,10 @@ export default function ChessField() {
             <Box xs={4}>
                 <Paper square elevation={12}>
                     <Grid container columns={33}>
-                        <Grid xs={evaluation ? 1 : 0}>
+                        <Grid xs={evalDepth > 0 ? 1 : 0}>
                             {evalBar}
                         </Grid>
-                        <Grid xs={evaluation ? 32 : 33}>
+                        <Grid xs={evalDepth > 0 ? 32 : 33}>
                             <Chessboard boardOrientation={boardOrientation}
                                         isDraggablePiece={isDraggablePiece}
                                         position={game.fen()}

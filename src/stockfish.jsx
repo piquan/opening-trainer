@@ -7,15 +7,8 @@ import { Chess } from 'chess.js'
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer#security_requirements
 //
 // These are not set on GitHub Pages, so I'm restricted to single
-// threads.  That's not a big deal, though.
+// threads.  For this application, that's not a big deal, though.
 const kEngine = 'stockfish-nnue-16-single.js';
-
-// In single-threaded mode, it only seems to respond to "stop" when it
-// gets to a depth boundary.  That means that at deep depths, then it
-// may not respond quickly.  But we really don't care about doing a lot
-// of deep analysis anyway: we're looking for a basic sense of when the
-// opening went off the rails.
-const kGoDepthCommand = "go depth 20";
 
 export function StockfishManager() {
     // Recent versions of webpack give us ways to use webworkers in
@@ -45,6 +38,10 @@ export function StockfishManager() {
     // also can read the latest info.
     var info = {};
     const oninfo = [];
+
+    // We'll get new evalDepths as needed.
+    // FIXME Manage changes to evalDepth even without a board change.
+    var evalDepth = 1;
 
     function sendCommand (msg) {
         console.debug("[%s] stockfish> %s", state, msg);
@@ -98,7 +95,7 @@ export function StockfishManager() {
             sendCommand("position " + newPos);
             curPos = newPos;
             curSideFactor = newSideFactor;
-            sendCommand(kGoDepthCommand);
+            sendCommand(`go depth ${evalDepth}`);
             state = 'go';
         } else if (state === "idle") {
             console.warn("An idle Stockfish is talking to us.");
@@ -111,7 +108,17 @@ export function StockfishManager() {
     this.close = function () {
         sendCommand("quit");
     };
+    this.setEvalDepth = function (newEvalDepth) {
+        // FIXME Stop and restart the evaluation if it's in progress,
+        // or just stop the evaluation if the new depth is 0.
+        evalDepth = newEvalDepth;
+    };
     this.setPosition = function (position) {
+        if (evalDepth === 0) {
+            // FIXME This also needs to be adjusted to handle changes to
+            // setEvalDepth.
+            return;
+        }
         // The position needs to be what you'd have after a UCI
         // 'position' command, such as 'startpos' or
         // 'fen blah/blah moves e24' or whatever.

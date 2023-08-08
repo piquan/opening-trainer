@@ -69,4 +69,5 @@ export function EvalBar({value, boardOrientation}) {
 }
 EvalBar.propTypes = {
     value: PropTypes.number.isRequired,
+    boardOrientation: PropTypes.oneOf(['black', 'white']).isRequired,
 };

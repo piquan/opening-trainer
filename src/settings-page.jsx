@@ -1,7 +1,8 @@
 import * as React from 'react';
 
-import { Divider, FormControlLabel, FormGroup, Slider, Stack, Switch, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material';
+import { Divider, Input, Slider, Stack, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
+import Grid from '@mui/material/Unstable_Grid2';
 
 import { SettingsContext, UpdateSettingsContext, ValidRatings, NumRatings, MinRating, MaxRating, MinDate, MaxDate } from './settings';
 
@@ -31,14 +32,29 @@ function ratingDisplayedToValid(displayed) {
     return displayed;
 }
 
-function EvalBarSetting() {
+function EvalDepthSetting() {
     const settings = React.useContext(SettingsContext);
+    const evalDepth = settings.evalDepth;
     const updateSettings = React.useContext(UpdateSettingsContext);
+    const updateEvalDepth = (newValue) =>
+          updateSettings({evalDepth: newValue});
 
-    return (
-        <Switch checked={settings.evaluation}
-                onChange={e => updateSettings({evaluation: e.target.checked})} />
-    );
+    const handleSliderChange = (e, newValue) => updateEvalDepth(newValue);
+    const handleInputChange = e => updateEvalDepth(Number(e.target.value));
+
+    return <Grid container spacing={2} alignItems="center">
+               <Grid item xs>
+                   <Slider value={evalDepth}
+                           onChange={handleSliderChange}
+                           step={1} min={0} max={30}
+                           valueLabelDisplay="auto" />
+               </Grid>
+               <Grid item>
+                   <Input value={evalDepth} size="small"
+                          inputProps={{step:1, min:0, max:30, type: 'number'}}
+                          onChange={handleInputChange} />
+               </Grid>
+           </Grid>;
 }
 
 function RatingsSettings() {
@@ -133,10 +149,8 @@ export function SearchSettings() {
     return (
         <Stack xs={3}>
             <Typography variant="h5">App Settings</Typography>
-            <FormGroup>
-                <FormControlLabel control={<EvalBarSetting/>}
-                                  label="Eval Bar" />
-            </FormGroup>
+            <Divider textAlign="left" sx={{pt: 2}}>Eval Depth</Divider>
+            <EvalDepthSetting/>
             <Typography variant="h5">Search Settings</Typography>
             <Divider textAlign="left" sx={{pt: 2}}>Ratings</Divider>
             <RatingsSettings />
