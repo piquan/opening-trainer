@@ -287,14 +287,7 @@ export default function ChessField() {
                 if (noMoves)
                     setNoMoves(false);
                 const explorerMove = randomMove(data);
-                // const possibleMoves = game.moves();
-                // const randomIndex =
-                //     Math.floor(Math.random() * possibleMoves.length);
-                // const move = possibleMoves[randomIndex];
-                // We use the setTimeout, because if we don't include a redraw
-                // before making a new move, we don't get animations.
-                setTimeout(() => makeAMove(explorerMove.san), 0);
-                //makeAMove(explorerMove.san);
+                makeAMove(explorerMove.san);
             }
         } else {
             if (noMoves)
