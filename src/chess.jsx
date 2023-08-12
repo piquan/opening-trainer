@@ -42,7 +42,7 @@ function randomMove(data) {
             return move;
         }
     }
-    throw new Error("randomMove did not terminate");
+    throw new Error("Unexpected mismatch picking randomMove");
 }
 
 // This shouldn't be called during a render, only in a useEffect.
@@ -262,10 +262,10 @@ export default function ChessField() {
         queryParams.ratings = queryRatings;
     }
     if (dateRange[0] !== MinDate) {
-        queryParams.since = dateRange[0];
+        queryParams.since = dateRange[0].format('YYYY-MM');
     }
     if (dateRange[1] !== MaxDate) {
-        queryParams.until = dateRange[1];
+        queryParams.until = dateRange[1].format('YYYY-MM');
     }
     queryParams.speeds = timeControls.join(',');
     const {data, status} = useQuery({
