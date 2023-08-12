@@ -2,7 +2,7 @@
 
 favicon.ico
 /node_modules
-/out/
+/dist/
 .DS_Store
 *.pem
 npm-debug.log*
