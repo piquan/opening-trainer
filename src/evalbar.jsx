@@ -3,30 +3,35 @@ import { useTheme } from '@mui/material/styles';
 
 import styles from './evalbar.module.css';
 
-export function EvalBar({value, boardOrientation}) {
-    const separator =
-        (value === Infinity) ? 0 :
-        (value === -Infinity) ? 8 :
-        (value <= -4) ? 0.25 :
-        (value >= 4) ? 7.75 :
-        4 - value;
+export function EvalBar({evalInfo, boardOrientation}) {
+    console.log(evalInfo);
+    const barSeparatesAt =
+        typeof evalInfo === "undefined" ? 4 :
+        'mate' in evalInfo ? (evalInfo.mate > 0 ? 0 : 8) :
+        !('pawns' in evalInfo) ? 4 :
+        (evalInfo.pawns <= -4) ? 0.25 :
+        (evalInfo.pawns >= 4) ? 7.75 :
+        4 - evalInfo.pawns;
     const barStyle = {
-        scale: `1 ${separator}`,
+        scale: `1 ${barSeparatesAt}`,
     };
 
     const evalFmt =
-          (value === Infinity) ? "+M" :
-          (value === -Infinity) ? "-M" :
-          (value <= -10) ? value.toFixed(0) :
-          (value >= 10) ? "+" + value.toFixed(0) :
-          (value < 0) ? value.toFixed(1) :
-          "+" + value.toFixed(1);
+        typeof evalInfo === "undefined" ? "\u2026" :
+        'mate' in evalInfo ? (
+            evalInfo.mate > 0 ? "+M" + evalInfo.mate :
+            "-M" + (-evalInfo.mate)) :
+        !('pawns' in evalInfo) ? "\u2026" :
+        evalInfo.pawns <= -10 ? evalInfo.pawns.toFixed(0) :
+        evalInfo.pawns >= 10 ? "+" + evalInfo.pawns.toFixed(0) :
+        evalInfo.pawns < 0 ? evalInfo.pawns.toFixed(1) :
+        "+" + evalInfo.pawns.toFixed(1);
 
     const theme = useTheme();
 
     const barTransform =
-          (boardOrientation === "white" ? "translate(0 0)" :
-           "translate(0 480) scale(1 -1)");
+        (boardOrientation === "white" ? "translate(0 0)" :
+         "translate(0 480) scale(1 -1)");
 
     // We say the viewbox is 30x480 (the approximate size), but we're
     // actually contained in a Stack.  That will scale us to fit the
@@ -68,6 +73,6 @@ export function EvalBar({value, boardOrientation}) {
         </svg>);
 }
 EvalBar.propTypes = {
-    value: PropTypes.number.isRequired,
+    evalInfo: PropTypes.object.isRequired,
     boardOrientation: PropTypes.oneOf(['black', 'white']).isRequired,
 };

@@ -236,16 +236,10 @@ export default function ChessField() {
         const moves = game.history({verbose: true}).map(m => m.lan);
         sfManager.setPosition("startpos moves " + moves.join(" "));
     }, [game, evalDepth, sfManager]);
-    const posEval = (
-        typeof stockfishInfo === "undefined" ? 0 :
-        'mate' in stockfishInfo ? (
-            // We use 1/ to distinguish between +/- 0 in a checkmate.
-            (1 / stockfishInfo.mate < 0) ? Infinity : -Infinity) :
-        'pawns' in stockfishInfo ? stockfishInfo.pawns :
-        0);
     const evalBar = (
         evalDepth > 0 ?
-            <EvalBar value={posEval} boardOrientation={boardOrientation} /> :
+                    <EvalBar evalInfo={stockfishInfo}
+                             boardOrientation={boardOrientation} /> :
         <></>);
 
     const moveHistory = game.history({verbose: true});
@@ -299,7 +293,6 @@ export default function ChessField() {
     if (status === "success") {
         const numFoundInt = data.white + data.draws + data.black;
         const numFoundStr =
-            numFoundInt === 0 ? "" :
             numFoundInt === 1 ? "1 game in the database" :
             `${numFoundInt.toLocaleString()} games in the database`;
         if (numFoundStr !== numFound)
