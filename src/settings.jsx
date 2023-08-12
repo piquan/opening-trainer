@@ -40,15 +40,20 @@ function settingsFromString(settingsStr) {
     if (!(settings instanceof Object)) {
         settings = {};
     }
-    // Fix the dateRange; it got changed to an ISO timestamp during the
-    // JSON stringification.
     if ('dateRange' in settings) {
+        // Fix the dateRange; it got changed to an ISO timestamp during the
+        // JSON stringification.
         settings.dateRange = settings.dateRange.map(dayjs.utc);
+    }
+    if ('ratings' in settings) {
+        // The Infinity rating gets changed to null in stringification.
+        settings.ratings = settings.ratings.map(
+            r => r === null ? Infinity : r);
     }
     // Only keep settings that are still part of defaultSettings
     settings = Object.fromEntries(
         Object.entries(settings)
-              .filter(([k, v]) => k in defaultSettings));
+              .filter(([k]) => k in defaultSettings));
     return settings;
 }
 
@@ -86,6 +91,8 @@ export function SettingsContexts({children}) {
         }
     }, [settings]);
 
+    // FIXME I haven't found a good way to subscribe to the 'storage' event.
+    
     return <SettingsContext.Provider value={settings}>
         <UpdateSettingsContext.Provider value={updateSettings}>
             {children}
