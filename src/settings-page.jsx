@@ -126,19 +126,19 @@ function DateRangeSettings() {
     const updateSettings = React.useContext(UpdateSettingsContext);
     const [since, until] = settings.dateRange;
 
-    const setSince = function(event, newSince) {
+    const handleSince = function(event, newSince) {
         updateSettings({dateRange: [newSince, until]});
     }
-    const setUntil = function(event, newUntil) {
+    const handleUntil = function(event, newUntil) {
         updateSettings({dateRange: [since, newUntil]});
     }
 
     return (
         <Stack direction="row" sx={{pt: 1}}>
-            <DatePicker label="Since" value={since} onChange={setSince}
+            <DatePicker label="Since" value={since} onChange={handleSince}
                         views={['year', 'month']} disableFuture
                         minDate={MinDate} maxDate={until} />
-            <DatePicker label="Until" value={until} onChange={setUntil}
+            <DatePicker label="Until" value={until} onChange={handleUntil}
                         views={['year', 'month']}
                         minDate={since} maxDate={MaxDate} />
         </Stack>

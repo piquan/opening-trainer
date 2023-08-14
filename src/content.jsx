@@ -92,19 +92,16 @@ function fragmentDel(key) {
 export default function ChessField() {
     // We include the PGN and orientation in the URL fragment to allow
     // bookmarking, and moreover, so that browser nav away and back
-    // doesn't lose all our state.  We'll later include the db search
-    // params in cookies.
+    // doesn't lose all our state.
     const [boardOrientation, setBoardOrientation] = React.useState(() => {
         return fragmentGet("color") === "black" ? "b" : "w";
     });
     const longBoardOrientation = boardOrientation === "b" ? "black" : "white";
 
+    // XXX We're only supposed to use fragmentGet during an effect.  Does
+    // this matter?  (We could factor it out of ChessField to the top level!)
     const fragmentPgn = fragmentGet("pgn");
     const [chess, chessDispatch] = useChess({pgn: fragmentPgn});
-    // After the first render, update the game with the fragment's
-    // PGN.  Give it an explicit empty dependency, because if we do
-    // this on subsequent renders, it will fight with makeAMove trying
-    // to replace the game.
 
     // Every time the game changes, update the fragment to include the
     // new state.
@@ -146,7 +143,7 @@ export default function ChessField() {
         chessDispatch({type: 'reset'});
     }
 
-    function onDrop(sourceSquare, targetSquare, piece) {
+    function handleDrop(sourceSquare, targetSquare, piece) {
         // On promotion, the piece is the new piece.  This is in the form
         // "wQ" for white queen.
         const move = makeAMove({
@@ -296,7 +293,7 @@ export default function ChessField() {
                             <Chessboard boardOrientation={longBoardOrientation}
                                         isDraggablePiece={isDraggablePiece}
                                         position={chess.fen}
-                                        onPieceDrop={onDrop} />
+                                        onPieceDrop={handleDrop} />
                         </Grid>
                     </Grid>
                 </Paper>
