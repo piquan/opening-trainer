@@ -4,13 +4,16 @@ import { useTheme } from '@mui/material/styles';
 import styles from './evalbar.module.css';
 
 export function EvalBar({evalInfo, boardOrientation}) {
-    const barSeparatesAt =
+    // The bar is black draw drawn on white.  The part in the parens
+    // gives where the dividing line is, with 0 being black to mate,
+    // 8 being white to mate, and 4 being even.
+    const barSeparatesAt = 8 - (
         typeof evalInfo === "undefined" ? 4 :
-        'mate' in evalInfo ? (evalInfo.mate > 0 ? 0 : 8) :
+        'mate' in evalInfo ? (evalInfo.mate > 0 ? 8 : 0) :
         !('pawns' in evalInfo) ? 4 :
         (evalInfo.pawns <= -4) ? 0.25 :
         (evalInfo.pawns >= 4) ? 7.75 :
-        4 - evalInfo.pawns;
+        evalInfo.pawns + 4);
     const barStyle = {
         scale: `1 ${barSeparatesAt}`,
     };
@@ -19,7 +22,7 @@ export function EvalBar({evalInfo, boardOrientation}) {
         typeof evalInfo === "undefined" ? "\u2026" :
         'mate' in evalInfo ? (
             evalInfo.mate > 0 ? "+M" + evalInfo.mate :
-            "-M" + (-evalInfo.mate)) :
+                            "-M" + (-evalInfo.mate)) :
         !('pawns' in evalInfo) ? "\u2026" :
         evalInfo.pawns <= -10 ? evalInfo.pawns.toFixed(0) :
         evalInfo.pawns >= 10 ? "+" + evalInfo.pawns.toFixed(0) :
