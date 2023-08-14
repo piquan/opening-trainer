@@ -4,7 +4,6 @@ import { useTheme } from '@mui/material/styles';
 import styles from './evalbar.module.css';
 
 export function EvalBar({evalInfo, boardOrientation}) {
-    console.log(evalInfo);
     const barSeparatesAt =
         typeof evalInfo === "undefined" ? 4 :
         'mate' in evalInfo ? (evalInfo.mate > 0 ? 0 : 8) :

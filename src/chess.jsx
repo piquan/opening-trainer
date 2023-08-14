@@ -182,7 +182,7 @@ export default function ChessField() {
         }
     }
 
-    /*eslint no-unused-vars: ["error", {"args": "none"}]*/
+    // eslint-disable-next-line no-unused-vars
     function isDraggablePiece({ piece, sourceSquare }) {
         // The piece is like "wP" for white pawn.
         return piece[0] === playerLetter &&

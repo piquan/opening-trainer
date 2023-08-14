@@ -1,4 +1,6 @@
 import * as React from 'react';
+import { StrictMode } from 'react';
+import PropTypes from 'prop-types';
 
 import { AppBar, Container, CssBaseline, Drawer, IconButton, Paper, Toolbar, Typography } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers';
@@ -14,18 +16,25 @@ import { SearchSettings } from './settings-page';
 
 const queryClient = new QueryClient();
 
+// eslint-disable-next-line no-unused-vars
 function ErrorFallback({ error, resetErrorBoundary }) {
     // Call resetErrorBoundary() to reset the error boundary and
     // retry the render.  In that case, you'd need to define the
     // onReset attribute on the ErrorBoundary too.
+    const msg = error instanceof Error ? error.message :
+                JSON.stringify(error);
     return (
         <Container>
             <Paper elevation={8} style={{margin: 30, padding: 5}}>
                 <Typography variant="h4">Error:</Typography>
-                <Typography style={{ whiteSpace: "pre-wrap"}}>{error.message}</Typography>
+                <Typography style={{ whiteSpace: "pre-wrap"}}>{msg}</Typography>
             </Paper>
         </Container>);
 }
+ErrorFallback.propTypes = {
+    error: PropTypes.any.isRequired,
+    resetErrorBoundary: PropTypes.func.isRequired,
+};
 
 export default function App() {
     const [settingsOpen, setSettingsOpen] = React.useState(false);
@@ -34,10 +43,10 @@ export default function App() {
     return (<>
         <CssBaseline />
         <ErrorBoundary FallbackComponent={ErrorFallback}>
-            <QueryClientProvider client={queryClient}>
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    <SettingsContexts>
-                        <>
+            <StrictMode>
+                <QueryClientProvider client={queryClient}>
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <SettingsContexts>
                             <AppBar position="static">
                                 <Toolbar>
                                     <Typography variant="h6"
@@ -61,10 +70,10 @@ export default function App() {
                             <Container maxWidth="sm">
                                 <ChessField />
                             </Container>
-                        </>
-                    </SettingsContexts>
-                </LocalizationProvider>
-            </QueryClientProvider>
+                        </SettingsContexts>
+                    </LocalizationProvider>
+                </QueryClientProvider>
+            </StrictMode>
         </ErrorBoundary>
     </>);
 }

@@ -100,5 +100,5 @@ export function SettingsContexts({children}) {
     </SettingsContext.Provider>;
 }
 SettingsContexts.propTypes = {
-    children: PropTypes.element,
+    children: PropTypes.node,
 };
