@@ -199,12 +199,11 @@ export default function ChessField() {
     const sfManager = React.useMemo(() => new StockfishManager(), []);
     const stockfishInfo = React.useSyncExternalStore(
         sfManager.subscribe,
-        sfManager.getInfo,
-        () => {return sfManager.serverInfo;});
+        sfManager.getInfo);
     const lanHistory = chess.history.lan;
     React.useEffect(() => {
-        sfManager.setEvalDepth(evalDepth);
-        sfManager.setPosition("startpos moves " + lanHistory.join(" "));
+        sfManager.setPosDepth("startpos moves " + lanHistory.join(" "),
+                              evalDepth);
     }, [lanHistory, evalDepth, sfManager]);
     const evalBar = (
         evalDepth > 0 ?
