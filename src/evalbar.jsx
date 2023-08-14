@@ -29,7 +29,7 @@ export function EvalBar({evalInfo, boardOrientation}) {
     const theme = useTheme();
 
     const barTransform =
-        (boardOrientation === "white" ? "translate(0 0)" :
+        (boardOrientation === "w" ? "translate(0 0)" :
          "translate(0 480) scale(1 -1)");
 
     // We say the viewbox is 30x480 (the approximate size), but we're
@@ -73,5 +73,5 @@ export function EvalBar({evalInfo, boardOrientation}) {
 }
 EvalBar.propTypes = {
     evalInfo: PropTypes.object.isRequired,
-    boardOrientation: PropTypes.oneOf(['black', 'white']).isRequired,
+    boardOrientation: PropTypes.oneOf(['b', 'w']).isRequired,
 };

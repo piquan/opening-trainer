@@ -4,13 +4,12 @@ import Grid from '@mui/material/Unstable_Grid2';
 
 import { useQuery } from '@tanstack/react-query'
 import axios from 'axios';
-import { cloneDeep } from 'lodash-es';
-import { Chess } from 'chess.js'
 import { Chessboard } from "react-chessboard";
 
 import { MinDate, MaxDate, ValidRatings, SettingsContext } from "./settings";
 import { StockfishManager } from "./stockfish";
 import { EvalBar } from "./evalbar";
+import { useChess } from './use-chess';
 
 function GetOpenings({queryKey}) {
     const params = queryKey[0];
@@ -96,73 +95,55 @@ export default function ChessField() {
     // doesn't lose all our state.  We'll later include the db search
     // params in cookies.
     const [boardOrientation, setBoardOrientation] = React.useState(() => {
-        return fragmentGet("color") === "black" ? "black" : "white";
+        return fragmentGet("color") === "black" ? "b" : "w";
     });
-    const playerLetter = boardOrientation[0];
+    const longBoardOrientation = boardOrientation === "b" ? "black" : "white";
 
-    const [game, setGame] = React.useState(() => {return new Chess();});
+    const fragmentPgn = fragmentGet("pgn");
+    const [chess, chessDispatch] = useChess({pgn: fragmentPgn});
     // After the first render, update the game with the fragment's
     // PGN.  Give it an explicit empty dependency, because if we do
     // this on subsequent renders, it will fight with makeAMove trying
     // to replace the game.
-    React.useEffect(() => {
-        const pgn = fragmentGet("pgn");
-        if (pgn === null) {
-            return;
-        }
-        const newGame = new Chess();
-        newGame.loadPgn(pgn);
-        setGame(newGame);
-    }, []);
 
     // Every time the game changes, update the fragment to include the
     // new state.
+    const pgn = chess.pgn;
     React.useEffect(() => {
-        const newPgn = game.pgn().replace(/ ?\. ?/g, '.');
-        if (newPgn === "") {
+        const shortPgn = chess.pgn.replace(/ ?\. ?/g, '.');
+        if (shortPgn === "") {
             fragmentDel("pgn");
         } else {
-            fragmentSet("pgn", newPgn);
+            fragmentSet("pgn", shortPgn);
         }
-        if (boardOrientation === "white" && newPgn === "") {
+        if (boardOrientation === "w" && shortPgn === "") {
             fragmentDel("color");
         } else {
-            fragmentSet("color", boardOrientation);
+            fragmentSet("color", longBoardOrientation);
         }
-    }, [game, boardOrientation]);
+    }, [pgn, boardOrientation]);
 
     function makeAMove(move) {
-        const newGame = cloneDeep(game);
-        var updatedMove;
-        try {
-            updatedMove = newGame.move(move);
-        } catch (e) {
-            if (e.message.startsWith('Invalid move:')) {
-                return null;
-            }
-            throw e;
+        const moveObj = chess.testMove(move);
+        if (moveObj !== null) {
+            chessDispatch({type: 'move', move: move});
+            return moveObj;
+        } else {
+            return null;
         }
-        setGame(newGame);
-        return updatedMove;
     }
 
-    const undoDisabled = !game.history().length;
+    const undoDisabled = chess.history.empty;
     function handleUndo() {
-        const newGame = cloneDeep(game);
-        // Undo enough to give the player a new move.
-        do {
-            if (!newGame.undo())
-                break;
-        } while (newGame.turn() !== playerLetter);
-        setGame(newGame);
+        chessDispatch({type: 'undoToPlayer', player: boardOrientation});
     }
 
     function handleFlip() {
-        setBoardOrientation(boardOrientation === "white" ? "black" : "white");
+        setBoardOrientation(boardOrientation === "w" ? "b" : "w");
     }
 
     function handleReset() {
-        setGame(new Chess());
+        chessDispatch({type: 'reset'});
     }
 
     function onDrop(sourceSquare, targetSquare, piece) {
@@ -185,9 +166,9 @@ export default function ChessField() {
     // eslint-disable-next-line no-unused-vars
     function isDraggablePiece({ piece, sourceSquare }) {
         // The piece is like "wP" for white pawn.
-        return piece[0] === playerLetter &&
-               playerLetter === game.turn() &&
-               !game.isGameOver();
+        return piece[0] === boardOrientation &&
+               boardOrientation === chess.turn &&
+               !chess.gameOver;
     }
 
     // FIXME Make a more general way to handle snackbar messages
@@ -196,24 +177,16 @@ export default function ChessField() {
     const [showedEndOfGameMessage, setShowedEndOfGameMessage] =
         React.useState(false);
     if (showedEndOfGameMessage) {
-        if (!game.isGameOver()) {
+        if (chess.gameOver === null) {
             // We've reverted to a non game-over state, so remove our
             // notes that we've ended the game.
             setEndOfGameMessage(null);
             setShowedEndOfGameMessage(false);
         }
     } else {
-        if (game.isGameOver()) {
+        if (chess.gameOver !== null) {
             setShowedEndOfGameMessage(true);
-            setEndOfGameMessage(
-                game.isCheckmate() ? "Checkmate" :
-                game.isStalemate() ? "Stalemate" :
-                game.isInsufficientMaterial() ? "Draw by insufficient material" :
-                game.isThreefoldRepetition() ? "Draw by threefold repetition" :
-                // I think the only remaining draw is the 50-move rule.
-                game.isDraw() ? "Draw" :
-                // I don't think this can happen.
-                "Game over");
+            setEndOfGameMessage(chess.gameOver);
         }
     }
     function handleSnackbarClose(event, reason) {
@@ -231,21 +204,20 @@ export default function ChessField() {
         sfManager.subscribe,
         sfManager.getInfo,
         () => {return sfManager.serverInfo;});
+    const lanHistory = chess.history.lan;
     React.useEffect(() => {
         sfManager.setEvalDepth(evalDepth);
-        const moves = game.history({verbose: true}).map(m => m.lan);
-        sfManager.setPosition("startpos moves " + moves.join(" "));
-    }, [game, evalDepth, sfManager]);
+        sfManager.setPosition("startpos moves " + lanHistory.join(" "));
+    }, [lanHistory, evalDepth, sfManager]);
     const evalBar = (
         evalDepth > 0 ?
                     <EvalBar evalInfo={stockfishInfo}
                              boardOrientation={boardOrientation} /> :
         <></>);
 
-    const moveHistory = game.history({verbose: true});
     const queryParams = {
-        fen: moveHistory.length ? moveHistory[0].before : game.fen(),
-        play: moveHistory.map(x=>x.lan).join(','),
+        fen: chess.history.empty ? chess.fen : chess.history.obj[0].before,
+        play: chess.history.lan.join(','),
         topGames: 0,
         recentGames: 0,
     };
@@ -272,8 +244,7 @@ export default function ChessField() {
 
     const [noMoves, setNoMoves] = React.useState(false);
     if (status === "success") {
-        if (playerLetter !== game.turn() &&
-            !game.isGameOver()) {
+        if (boardOrientation !== chess.turn && !chess.gameOver) {
             if (data.moves.length === 0) {
                 if (!noMoves)
                     setNoMoves(true);
@@ -304,13 +275,13 @@ export default function ChessField() {
         const newOpening = `[${data.opening.eco}] ${data.opening.name}`;
         if (newOpening !== opening)
             setOpening(newOpening);
-    } else if (game.history().length === 0) {
+    } else if (chess.history.empty) {
         const newOpening = "Starting Position";
         if (newOpening !== opening)
             setOpening(newOpening);
     }
 
-    const analysisUrl = `https://lichess.org/analysis/pgn/${encodeURIComponent(game.pgn())}?color=${boardOrientation}`;
+    const analysisUrl = `https://lichess.org/analysis/pgn/${encodeURIComponent(chess.pgn)}?color=${longBoardOrientation}`;
 
     return (
         <Stack spacing={2}
@@ -322,9 +293,9 @@ export default function ChessField() {
                             {evalBar}
                         </Grid>
                         <Grid xs={evalDepth > 0 ? 32 : 33}>
-                            <Chessboard boardOrientation={boardOrientation}
+                            <Chessboard boardOrientation={longBoardOrientation}
                                         isDraggablePiece={isDraggablePiece}
-                                        position={game.fen()}
+                                        position={chess.fen}
                                         onPieceDrop={onDrop} />
                         </Grid>
                     </Grid>
@@ -350,9 +321,9 @@ export default function ChessField() {
                 <Divider textAlign="left">Opening</Divider>
                 <Typography>{opening}</Typography>
                 <Divider textAlign="left">PGN</Divider>
-                <Typography>{game.pgn() || "1."}</Typography>
+                <Typography>{chess.pgn || "1."}</Typography>
                 <Divider textAlign="left">FEN</Divider>
-                <Typography>{game.fen()}</Typography>
+                <Typography>{chess.fen}</Typography>
             </Box>
             <Snackbar open={!!endOfGameMessage} autoHideDuration={6000}
                       onClose={handleSnackbarClose}>

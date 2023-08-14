@@ -10,7 +10,7 @@ import { Settings } from '@mui/icons-material';
 import { ErrorBoundary } from "react-error-boundary";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-import ChessField from './chess';
+import ChessField from './content';
 import { SettingsContexts } from './settings';
 import { SearchSettings } from './settings-page';
 
