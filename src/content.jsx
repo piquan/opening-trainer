@@ -105,7 +105,6 @@ export default function ChessField() {
 
     // Every time the game changes, update the fragment to include the
     // new state.
-    const pgn = chess.pgn;
     React.useEffect(() => {
         const shortPgn = chess.pgn.replace(/ ?\. ?/g, '.');
         if (shortPgn === "") {
@@ -113,12 +112,12 @@ export default function ChessField() {
         } else {
             fragmentSet("pgn", shortPgn);
         }
-        if (boardOrientation === "w" && shortPgn === "") {
+        if (longBoardOrientation === "white" && shortPgn === "") {
             fragmentDel("color");
         } else {
             fragmentSet("color", longBoardOrientation);
         }
-    }, [pgn, boardOrientation]);
+    }, [chess.pgn, longBoardOrientation]);
 
     function makeAMove(move) {
         const moveObj = chess.testMove(move);

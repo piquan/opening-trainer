@@ -13,14 +13,11 @@ const kEngine = 'stockfish-nnue-16-single.js';
 export function StockfishManager() {
     // Overview: The state is maintained as uci (startup), isready
     // (waiting to get to a state where we can send new positions),
-    // and run (evaluating or idle).  We maintain the
-    // (position, depth) tuple that we sent the engine when we most
-    // recently went to the run state (cur*), as well as the most recent
-    // requests we got from the UI (new*).  When the UI sends us a new
-    // (position, depth) tuple, we send commands to move the engine to
+    // and run (evaluating or idle).  We maintain the most recent
+    // requests we got from the UI for the (position, depth) tuple.
+    // When we get new versions, we send commands to move the engine to
     // the isready state.  When the engine acknowledges that it's ready,
-    // then we send the commands to start evaluation, and then copy
-    // new* into cur*.
+    // then we send the commands to start evaluation.
     //
     // We present as an object with four methods: close, setPosDepth,
     // subscribe, and getInfo.  We don't ever use this.* attributes; I
@@ -45,14 +42,8 @@ export function StockfishManager() {
 
     // State: uci, isready, run, idle
     let state = 'uci';
-    // cur* are what the engine is currently using for its evaluation,
-    // while new* are the most recent requests we got from the UI.
-
-    // curMoves is a string with the UCI moves, including the 'startpos'.
-    let curPos = null;
-    let curEvalDepth = null;
     // These are the values we want to have; we'll send them to Stockfish
-    // once it's initialized.
+    // once it's initialized, or reports it's ready.
     let newPos = 'startpos';
     let newEvalDepth = 0;
     // sideFactor is 1 if the engine is evaluating white, -1 if
@@ -109,8 +100,6 @@ export function StockfishManager() {
             if (msg !== 'readyok') {
                 return;
             }
-            curPos = newPos;
-            curEvalDepth = newEvalDepth;
             if (newEvalDepth > 0) {
                 sendCommand("position " + newPos);
                 sendCommand(`go depth ${newEvalDepth}`);
