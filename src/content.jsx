@@ -69,6 +69,7 @@ function fragmentSet(key, value) {
         return;
     }
     usp.set(key, value);
+    usp.sort();  // Put the pgn at the end for easy editing
     const newFragment = usp.toString();
     const url = new URL(window.location);
     url.hash = "#" + newFragment;
