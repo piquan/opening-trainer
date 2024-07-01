@@ -126,10 +126,10 @@ function DateRangeSettings() {
     const updateSettings = React.useContext(UpdateSettingsContext);
     const [since, until] = settings.dateRange;
 
-    const handleSince = function(event, newSince) {
+    const handleSince = function(newSince) {
         updateSettings({dateRange: [newSince, until]});
     }
-    const handleUntil = function(event, newUntil) {
+    const handleUntil = function(newUntil) {
         updateSettings({dateRange: [since, newUntil]});
     }
 
