@@ -235,7 +235,7 @@ export default function ChessField() {
         queryFn: GetOpenings,
         retryDelay: computeRetryDelay,
         staleTime: 24 * 60 * 60 * 1000,
-        cacheTime: Infinity,
+        gcTime: 15 * 60 * 1000,
     });
 
     const [noMoves, setNoMoves] = React.useState(false);
