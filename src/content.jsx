@@ -5,10 +5,12 @@ import Grid from '@mui/material/Unstable_Grid2';
 import { Chessboard } from "react-chessboard";
 
 import { useLichess } from "./lichess";
-import { useStockfishEval } from "./stockfish";
+import { useStockfishEval, useStockfishOpponent } from "./stockfish";
 import { EvalBar } from "./evalbar";
 import { useChess } from './use-chess';
 import { SettingsContext } from "./settings";
+
+const kStartFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 // This shouldn't be called during a render, only in a useEffect.
 function fragmentSearchParameters() {
@@ -171,6 +173,14 @@ export default function ChessField() {
 
     const analysisUrl = `https://lichess.org/analysis/pgn/${encodeURIComponent(chess.pgn)}?color=${longBoardOrientation}`;
 
+    const practiceUrlParams = new URLSearchParams({
+        color: longBoardOrientation,
+        fen: kStartFen,
+        is960: "false",
+        moveList: chess.history.lan.join(' '),
+    }).toString();
+    const practiceUrl = new URL(`https://www.chess.com/practice/custom?${practiceUrlParams}`).href;
+
     const {status, noMoves, numFound, opening, chosenMove} =
           useLichess({chess});
     const numFoundStr =
@@ -178,11 +188,21 @@ export default function ChessField() {
           numFound === 1 ? "1 game in the database" :
           `${numFound.toLocaleString()} games in the database`;
 
+    // We disable Stockfish when it's not its turn by setting the depth to 0.
+    // XXX Disable it when that's not the opponent we're using.
+    const opponentDepth =
+          boardOrientation !== chess.turn && !chess.gameOver ? 3 : 0;
+    const bestmove = useStockfishOpponent({lanHistory: chess.history.lan,
+                                           depth: opponentDepth, skill: 0});
+
+    // This chooses between the two opponent types.
+    const opponentMove = false ? chosenMove : bestmove;
+
     React.useEffect(() => {
-        if (boardOrientation !== chess.turn && !chess.gameOver && chosenMove) {
-            makeAMove(chosenMove.san);
+        if (boardOrientation !== chess.turn && !chess.gameOver && bestmove) {
+            makeAMove(bestmove);
         }
-    }, [boardOrientation, chess.turn, chess.gameOver, chosenMove]);
+    }, [boardOrientation, chess.turn, chess.gameOver, bestmove]);
 
     return (
         <Stack spacing={2}
@@ -215,9 +235,16 @@ export default function ChessField() {
                 </Collapse>
             </Box>
             <Box xs={3} sx={{p: 1}}>
-                <a href={analysisUrl} target="_blank" rel="noreferrer">
-                    Lichess Analysis Board
-                </a>
+                <Typography>
+                    <a href={analysisUrl} target="_blank" rel="noreferrer">
+                        Lichess Analysis Board
+                    </a>
+                </Typography>
+                <Typography>
+                    <a href={practiceUrl} target="_blank" rel="noreferrer">
+                        Practice on chess.com
+                    </a>
+                </Typography>
                 <Typography>{numFoundStr}</Typography>
                 <Divider textAlign="left">Opening</Divider>
                 <Typography>{opening}</Typography>

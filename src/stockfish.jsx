@@ -43,6 +43,9 @@ export class StockfishManager extends EventTarget {
 
     #worker = (typeof Worker === "undefined" ? null : new Worker(kEngine));
 
+    // The name is used for debug messages.
+    #name = ""
+
     // State: uci, isready, run, idle
     #state = 'uci';
 
@@ -70,19 +73,20 @@ export class StockfishManager extends EventTarget {
     // chosen move.
     #bestmove = null;
 
-    constructor() {
+    constructor(name) {
         super();
+        this.#name = name;
         this.#worker.onmessage = (e => this.#handleMessage(e.data));
         this.#sendCommand("uci");
     }
 
     #sendCommand (msg) {
-        console.debug("[%s] stockfish> %s", this.#state, msg);
+        console.debug("[%s] stockfish[%s]> %s", this.#state, this.#name, msg);
         this.#worker?.postMessage(msg);
     }
 
     #handleMessage (msg) {
-        console.debug("[%s] stockfish< %s", this.#state, msg);
+        console.debug("[%s] stockfish[%s]< %s", this.#state, this.#name, msg);
         // When we get "info" lines, we just handle them without bothering with
         // the state machine.
         const infoMatch = msg.match(/^\s*info\s.*(?:\bdepth\s+(?<depth>\d+))\b.*\bscore\s+(?:mate\s+(?<mate>-?\d+)|cp\s+(?<cp>-?\d+))/);
@@ -153,7 +157,6 @@ export class StockfishManager extends EventTarget {
             const bestmoveMatch = msg.match(/^\s*bestmove\s*(?<bestmove>\S+)/);
             if (bestmoveMatch) {
                 const bestmove = bestmoveMatch.groups.bestmove;
-                console.log("Best move:", bestmove);
                 this.#bestmove = bestmove;
                 const e = new CustomEvent("bestmove", {detail: bestmove});
                 this.dispatchEvent(e);
@@ -217,7 +220,7 @@ export class StockfishManager extends EventTarget {
 }
 
 export function useStockfishEval({lanHistory, depth}) {
-    const mgr = React.useMemo(() => new StockfishManager(), []);
+    const mgr = React.useMemo(() => new StockfishManager("eval"), []);
     React.useEffect(() => {
         mgr.setCommands({position: "startpos moves " + lanHistory.join(" "),
                          depth: depth,
@@ -228,7 +231,7 @@ export function useStockfishEval({lanHistory, depth}) {
 }
 
 export function useStockfishOpponent({lanHistory, depth, skill}) {
-    const mgr = React.useMemo(() => new StockfishManager(), []);
+    const mgr = React.useMemo(() => new StockfishManager("opponent"), []);
     React.useEffect(() => {
         mgr.setCommands({position: "startpos moves " + lanHistory.join(" "),
                          depth: depth,
