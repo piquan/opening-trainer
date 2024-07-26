@@ -2,47 +2,13 @@ import * as React from 'react';
 import { Alert, Box, Button, Collapse, Divider, Paper, Snackbar, Stack, Typography } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2';
 
-import { useQuery } from '@tanstack/react-query'
-import axios from 'axios';
 import { Chessboard } from "react-chessboard";
 
-import { MinDate, MaxDate, ValidRatings, SettingsContext } from "./settings";
+import { useLichess } from "./lichess";
 import { useStockfishEval } from "./stockfish";
 import { EvalBar } from "./evalbar";
 import { useChess } from './use-chess';
-
-function GetOpenings({queryKey}) {
-    const params = queryKey[0];
-    return axios.get("https://explorer.lichess.ovh/lichess",
-                     {params: params})
-                .then(res => res.data);
-}
-
-function computeRetryDelay(attempt, error) {
-    if (error.response && error.response.status === 429) {
-        // The API docs ask us to wait one minute between 429 statuses.
-        return 60 * 1000;
-    }
-    // Otherwise, use exponential backoff up to 30 seconds.
-    return Math.min(attempt > 1 ? 2 ** attempt * 1000 : 1000,
-                    30 * 1000)
-}
-
-function randomMove(data) {
-    const moves = data.moves;
-    var total = 0;
-    for (const move of moves) {
-        total += move.white + move.draws + move.black;
-    }
-    var random = Math.floor(Math.random() * total);
-    for (const move of moves) {
-        random -= move.white + move.draws + move.black;
-        if (random <= 0) {
-            return move;
-        }
-    }
-    throw new Error("Unexpected mismatch picking randomMove");
-}
+import { SettingsContext } from "./settings";
 
 // This shouldn't be called during a render, only in a useEffect.
 function fragmentSearchParameters() {
@@ -193,8 +159,7 @@ export default function ChessField() {
         setEndOfGameMessage(null);
     }
 
-    const {ratings, timeControls, dateRange, evalDepth} =
-          React.useContext(SettingsContext);
+    const {evalDepth} = React.useContext(SettingsContext);
 
     const stockfishInfo = useStockfishEval({lanHistory: chess.history.lan,
                                             depth: evalDepth});
@@ -204,73 +169,20 @@ export default function ChessField() {
                              boardOrientation={boardOrientation} /> :
         <></>);
 
-    const queryParams = {
-        fen: chess.history.empty ? chess.fen : chess.history.obj[0].before,
-        play: chess.history.lan.join(','),
-        topGames: 0,
-        recentGames: 0,
-    };
-    if (ratings[0] !== 0 || ratings[1] !== Infinity) {
-        const queryRatings = ValidRatings
-            .filter(r => (r >= ratings[0] && r < ratings[1]))
-            .join(',');
-        queryParams.ratings = queryRatings;
-    }
-    if (dateRange[0] !== MinDate) {
-        queryParams.since = dateRange[0].format('YYYY-MM');
-    }
-    if (dateRange[1] !== MaxDate) {
-        queryParams.until = dateRange[1].format('YYYY-MM');
-    }
-    queryParams.speeds = timeControls.join(',');
-    const {data, status} = useQuery({
-        queryKey: [queryParams],
-        queryFn: GetOpenings,
-        retryDelay: computeRetryDelay,
-        staleTime: 24 * 60 * 60 * 1000,
-        gcTime: 15 * 60 * 1000,
-    });
-
-    const [noMoves, setNoMoves] = React.useState(false);
-    if (status === "success") {
-        if (boardOrientation !== chess.turn && !chess.gameOver) {
-            if (data.moves.length === 0) {
-                if (!noMoves)
-                    setNoMoves(true);
-            } else {
-                if (noMoves)
-                    setNoMoves(false);
-                const explorerMove = randomMove(data);
-                makeAMove(explorerMove.san);
-            }
-        } else {
-            if (noMoves)
-                setNoMoves(false);
-        }
-    }
-
-    const [numFound, setNumFound] = React.useState("");
-    if (status === "success") {
-        const numFoundInt = data.white + data.draws + data.black;
-        const numFoundStr =
-            numFoundInt === 1 ? "1 game in the database" :
-            `${numFoundInt.toLocaleString()} games in the database`;
-        if (numFoundStr !== numFound)
-            setNumFound(numFoundStr);
-    }
-
-    const [opening, setOpening] = React.useState("");
-    if (status === "success" && data.opening) {
-        const newOpening = `[${data.opening.eco}] ${data.opening.name}`;
-        if (newOpening !== opening)
-            setOpening(newOpening);
-    } else if (chess.history.empty) {
-        const newOpening = "Starting Position";
-        if (newOpening !== opening)
-            setOpening(newOpening);
-    }
-
     const analysisUrl = `https://lichess.org/analysis/pgn/${encodeURIComponent(chess.pgn)}?color=${longBoardOrientation}`;
+
+    const {status, noMoves, numFound, opening, chosenMove} =
+          useLichess({chess});
+    const numFoundStr =
+          !numFound ? "" :
+          numFound === 1 ? "1 game in the database" :
+          `${numFound.toLocaleString()} games in the database`;
+
+    React.useEffect(() => {
+        if (boardOrientation !== chess.turn && !chess.gameOver && chosenMove) {
+            makeAMove(chosenMove.san);
+        }
+    }, [boardOrientation, chess.turn, chess.gameOver, chosenMove]);
 
     return (
         <Stack spacing={2}
@@ -306,7 +218,7 @@ export default function ChessField() {
                 <a href={analysisUrl} target="_blank" rel="noreferrer">
                     Lichess Analysis Board
                 </a>
-                <Typography>{numFound}</Typography>
+                <Typography>{numFoundStr}</Typography>
                 <Divider textAlign="left">Opening</Divider>
                 <Typography>{opening}</Typography>
                 <Divider textAlign="left">PGN</Divider>
