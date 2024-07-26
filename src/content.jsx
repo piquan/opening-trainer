@@ -7,7 +7,7 @@ import axios from 'axios';
 import { Chessboard } from "react-chessboard";
 
 import { MinDate, MaxDate, ValidRatings, SettingsContext } from "./settings";
-import { useStockfish } from "./stockfish";
+import { useStockfishEval } from "./stockfish";
 import { EvalBar } from "./evalbar";
 import { useChess } from './use-chess';
 
@@ -196,7 +196,8 @@ export default function ChessField() {
     const {ratings, timeControls, dateRange, evalDepth} =
           React.useContext(SettingsContext);
 
-    const stockfishInfo = useStockfish(chess.history.lan, evalDepth);
+    const stockfishInfo = useStockfishEval({lanHistory: chess.history.lan,
+                                            depth: evalDepth});
     const evalBar = (
         evalDepth > 0 ?
                     <EvalBar evalInfo={stockfishInfo}

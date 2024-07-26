@@ -1,4 +1,5 @@
 import * as React from 'react';
+import * as _ from 'lodash-es';
 import { Chess } from 'chess.js'
 
 // The multithreaded versions requires SharedArrayBuffer objects.
@@ -10,6 +11,7 @@ import { Chess } from 'chess.js'
 // These are not set on GitHub Pages, so I'm restricted to single
 // threads.  For this application, that's not a big deal, though.
 const kEngine = 'stockfish-nnue-16-single.js';
+const kSfMaxSkill = 20;
 
 export class StockfishManager extends EventTarget {
     // Overview: The state is maintained as uci (startup), isready
@@ -46,8 +48,7 @@ export class StockfishManager extends EventTarget {
 
     // These are the values we want to have; we'll send them to Stockfish
     // once it's initialized, or reports it's ready.
-    #newPos = 'startpos';
-    #newEvalDepth = 0;
+    #newCommands = {position: 'startpos', depth: 0, skill: kSfMaxSkill};
 
     // sideFactor is 1 if the engine is evaluating white, -1 if
     // black.  This is because eval output is from the current side's
@@ -55,11 +56,19 @@ export class StockfishManager extends EventTarget {
     // It's updated when a new "go" command is sent.
     #sideFactor = null;
 
+    // The "info" object gives the evaluation information, which is given
+    // in "info" lines.
+    //
     // Users can subscribe by setting an addEventListener for the "info"
     // event on this object.  They'll get an event with the info in
     // e.detail.  However, because we're using useSyncExternalStore,
     // our users actually use `subscribe` and `getInfo`.
     #info = {};
+
+    // The bestmove is used when using this Stockfish as an opponent.
+    // It indicates that the evaluation is complete, and gives the
+    // chosen move.
+    #bestmove = null;
 
     constructor() {
         super();
@@ -74,7 +83,6 @@ export class StockfishManager extends EventTarget {
 
     #handleMessage (msg) {
         console.debug("[%s] stockfish< %s", this.#state, msg);
-
         // When we get "info" lines, we just handle them without bothering with
         // the state machine.
         const infoMatch = msg.match(/^\s*info\s.*(?:\bdepth\s+(?<depth>\d+))\b.*\bscore\s+(?:mate\s+(?<mate>-?\d+)|cp\s+(?<cp>-?\d+))/);
@@ -112,13 +120,14 @@ export class StockfishManager extends EventTarget {
             if (msg !== 'readyok') {
                 return;
             }
-            if (this.#newEvalDepth > 0) {
-                this.#sendCommand("position " + this.#newPos);
-                this.#sendCommand(`go depth ${this.#newEvalDepth}`);
-
+            const { position, depth, skill } = this.#newCommands;
+            if (depth > 0) {
+                this.#sendCommand(`setoption name Skill Level value ${skill}`);
+                this.#sendCommand(`position ${position}`);
+                this.#sendCommand(`go depth ${depth}`);
                 // Parse the position, so we can load it into chess.js
                 // to find whose turn it is.  That will be the sideFactor.
-                const posMatch = this.#newPos.match(/^\s*(?:(?<startpos>startpos)|fen\s+(?<fen>[^m]+))(?:\s+moves\s+(?<moves>.*))?$/)
+                const posMatch = position.match(/^\s*(?:(?<startpos>startpos)|fen\s+(?<fen>[^m]+))(?:\s+moves\s+(?<moves>.*))?$/)
                 const chess = new Chess();
                 if (typeof posMatch.groups.fen !== "undefined") {
                     chess.load(posMatch.groups.fen);
@@ -134,22 +143,36 @@ export class StockfishManager extends EventTarget {
             // in the 'run' state, since our transition table is the same.
             this.#state = 'run';
         } else if (this.#state === "run") {
-            // In run state, we don't care about anything other than the info
-            // lines we already checked for.
+            // If we're in the "run" state, we only care about the "bestmove"
+            // and "info" lines.  We already checked for the "info" lines.
+            // We couldn't check for "bestmove" before, since if we were in
+            // "isready" mode trying to send a new position, then we can
+            // get a "bestmove" line from the old position before the "stop"
+            // completes.  Indeed, a "bestmove" is always supposed to be
+            // set in a go->stop transition.
+            const bestmoveMatch = msg.match(/^\s*bestmove\s*(?<bestmove>\S+)/);
+            if (bestmoveMatch) {
+                const bestmove = bestmoveMatch.groups.bestmove;
+                console.log("Best move:", bestmove);
+                this.#bestmove = bestmove;
+                const e = new CustomEvent("bestmove", {detail: bestmove});
+                this.dispatchEvent(e);
+            }
         }
     }
 
-    setPosDepth(position, evalDepth) {
-        // The position needs to be what you'd have after a UCI
-        // 'position' command, such as 'startpos' or
-        // 'fen blah/blah moves e24' or whatever.
-        if (position === this.#newPos && evalDepth === this.#newEvalDepth) {
+    // Example for "commands":
+    // {position: 'startpos', depth: 0, skill: 20}
+    // The position needs to be what you'd have after a UCI
+    // 'position' command, such as 'startpos' or
+    // 'fen blah/blah moves e24' or whatever.
+    setCommands(commands) {
+        if (_.isEqual(commands, this.#newCommands)) {
             // We've sent, or arranged to send, this information already.
             // (This may happen on rerenders or something.)
             return;
         }
-        this.#newPos = position;
-        this.#newEvalDepth = evalDepth;
+        this.#newCommands = commands;
 
         if (this.#state === "run") {
             // Even if we've finished the entire eval depth, or haven't sent
@@ -172,7 +195,7 @@ export class StockfishManager extends EventTarget {
     // useSyncExternalStore.  Normally, `const a = foo.method;`
     // doesn't retain `this` when `a()` is called.  But with this syntax,
     // it does.
-    subscribe = callback => {
+    subscribeInfo = callback => {
         const newcb = e => callback();
         this.addEventListener("info", newcb);
         const unsubscribe = () => this.removeEventListener("info", newcb);
@@ -180,16 +203,38 @@ export class StockfishManager extends EventTarget {
     }
     getInfo = () => this.#info;
 
+    subscribeBestmove = callback => {
+        const newcb = e => callback();
+        this.addEventListener("bestmove", newcb);
+        const unsubscribe = () => this.removeEventListener("bestmove", newcb);
+        return unsubscribe;
+    }
+    getBestmove = () => this.#bestmove;
+
     close() {
         this.#sendCommand("quit");
     }
 }
 
-export function useStockfish(lanHistory, depth) {
+export function useStockfishEval({lanHistory, depth}) {
     const mgr = React.useMemo(() => new StockfishManager(), []);
     React.useEffect(() => {
-        mgr.setPosDepth("startpos moves " + lanHistory.join(" "), depth);
+        mgr.setCommands({position: "startpos moves " + lanHistory.join(" "),
+                         depth: depth,
+                         skill: kSfMaxSkill});
     }, [lanHistory, depth, mgr]);
-    const info = React.useSyncExternalStore(mgr.subscribe, mgr.getInfo);
+    const info = React.useSyncExternalStore(mgr.subscribeInfo, mgr.getInfo);
     return info;
+}
+
+export function useStockfishOpponent({lanHistory, depth, skill}) {
+    const mgr = React.useMemo(() => new StockfishManager(), []);
+    React.useEffect(() => {
+        mgr.setCommands({position: "startpos moves " + lanHistory.join(" "),
+                         depth: depth,
+                         skill: skill});
+    }, [lanHistory, depth, skill, mgr]);
+    const bestmove = React.useSyncExternalStore(
+        mgr.subscribeBestmove, mgr.getBestmove);
+    return bestmove;
 }
