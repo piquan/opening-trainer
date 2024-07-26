@@ -215,29 +215,49 @@ export class StockfishManager extends EventTarget {
     getBestmove = () => this.#bestmove;
 
     close() {
-        this.#sendCommand("quit");
+        this.#sendCommand("quit"); // Not sure why I bother.
+        this.#worker.terminate();
     }
 }
 
 export function useStockfishEval({lanHistory, depth}) {
-    const mgr = React.useMemo(() => new StockfishManager("eval"), []);
+    const [mgr, setMgr] = React.useState(null);
+    const [info, setInfo] = React.useState({});
     React.useEffect(() => {
+        const newMgr = new StockfishManager("eval");
+        setMgr(newMgr);
+        return () => { newMgr.close(); }
+    }, [setMgr]);
+    React.useEffect(() => {
+        if (!mgr)
+            return;
         mgr.setCommands({position: "startpos moves " + lanHistory.join(" "),
                          depth: depth,
                          skill: kSfMaxSkill});
-    }, [lanHistory, depth, mgr]);
-    const info = React.useSyncExternalStore(mgr.subscribeInfo, mgr.getInfo);
+        const eventHandler = e => { setInfo(e.detail); };
+        mgr.addEventListener("info", eventHandler);
+        return () => mgr.removeEventListener("info", eventHandler);
+    }, [lanHistory, depth, mgr, setInfo]);
     return info;
 }
 
 export function useStockfishOpponent({lanHistory, depth, skill}) {
-    const mgr = React.useMemo(() => new StockfishManager("opponent"), []);
+    const [mgr, setMgr] = React.useState(null);
+    const [bestmove, setBestmove] = React.useState(null);
     React.useEffect(() => {
+        const newMgr = new StockfishManager("opponent");
+        setMgr(newMgr);
+        return () => { newMgr.close(); }
+    }, [setMgr]);
+    React.useEffect(() => {
+        if (!mgr)
+            return;
         mgr.setCommands({position: "startpos moves " + lanHistory.join(" "),
                          depth: depth,
                          skill: skill});
-    }, [lanHistory, depth, skill, mgr]);
-    const bestmove = React.useSyncExternalStore(
-        mgr.subscribeBestmove, mgr.getBestmove);
+        const eventHandler = e => { setBestmove(e.detail); };
+        mgr.addEventListener("bestmove", eventHandler);
+        return () => mgr.removeEventListener("bestmove", eventHandler);
+    }, [lanHistory, depth, mgr, skill, setBestmove]);
     return bestmove;
 }
