@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Alert, Box, Button, Collapse, Divider, Paper, Snackbar, Stack, Typography } from '@mui/material';
+import { Alert, Box, Button, Collapse, Divider, Link, Paper, Snackbar, Stack, Typography } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2';
 
 import { useQuery } from '@tanstack/react-query'
@@ -201,9 +201,9 @@ export default function ChessField() {
         sfManager.subscribe,
         sfManager.getInfo);
     const lanHistory = chess.history.lan;
+    const lanMoveList = lanHistory.join(" ");
     React.useEffect(() => {
-        sfManager.setPosDepth("startpos moves " + lanHistory.join(" "),
-                              evalDepth);
+        sfManager.setPosDepth("startpos moves " + lanMoveList, evalDepth);
     }, [lanHistory, evalDepth, sfManager]);
     const evalBar = (
         evalDepth > 0 ?
@@ -278,7 +278,8 @@ export default function ChessField() {
     }
 
     const analysisUrl = `https://lichess.org/analysis/pgn/${encodeURIComponent(chess.pgn)}?color=${longBoardOrientation}`;
-
+    const practiceUrl = `https://www.chess.com/practice/custom?color=${longBoardOrientation}&fen=rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR%20w%20KQkq%20-%200%201&is960=false&moveList=${encodeURIComponent(lanMoveList)}`;
+    
     return (
         <Stack spacing={2}
                divider={<Divider orientation="vertical" flexItem />}>
@@ -310,9 +311,14 @@ export default function ChessField() {
                 </Collapse>
             </Box>
             <Box xs={3} sx={{p: 1}}>
-                <a href={analysisUrl} target="_blank" rel="noreferrer">
-                    Lichess Analysis Board
-                </a>
+                <Box>
+                    <Link href={analysisUrl} target="_blank" rel="noreferrer">
+                        Lichess Analysis Board
+                    </Link>
+                    <Link href={practiceUrl} target="_blank" rel="noreferrer" sx={{ml: 2}}>
+                        Practice on chess.com
+                    </Link>
+                </Box>
                 <Typography>{numFound}</Typography>
                 <Divider textAlign="left">Opening</Divider>
                 <Typography>{opening}</Typography>
