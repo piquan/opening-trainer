@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Alert, Box, Button, Collapse, Divider, Paper, Snackbar, Stack, Typography } from '@mui/material';
+import { Alert, Box, Button, Collapse, Divider, Link, Paper, Snackbar, Stack, Typography } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2';
 
 import { Chessboard } from "react-chessboard";
@@ -235,17 +235,15 @@ export default function ChessField() {
                 </Collapse>
             </Box>
             <Box xs={3} sx={{p: 1}}>
-                <Typography>
-                    <a href={analysisUrl} target="_blank" rel="noreferrer">
+                <Box>
+                    <Link href={analysisUrl} target="_blank" rel="noreferrer">
                         Lichess Analysis Board
-                    </a>
-                </Typography>
-                <Typography>
-                    <a href={practiceUrl} target="_blank" rel="noreferrer">
+                    </Link>
+                    <Link href={practiceUrl} target="_blank" rel="noreferrer" sx={{ml: 2}}>
                         Practice on chess.com
-                    </a>
-                </Typography>
-                <Typography>{numFoundStr}</Typography>
+                    </Link>
+                </Box>
+                <Typography>{numFound}</Typography>
                 <Divider textAlign="left">Opening</Divider>
                 <Typography>{opening}</Typography>
                 <Divider textAlign="left">PGN</Divider>
