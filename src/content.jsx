@@ -5,6 +5,7 @@ import Grid from '@mui/material/Unstable_Grid2';
 import { useQuery } from '@tanstack/react-query'
 import axios from 'axios';
 import { Chessboard } from "react-chessboard";
+import { DEFAULT_POSITION } from "chess.js";
 
 import { MinDate, MaxDate, ValidRatings, SettingsContext } from "./settings";
 import { useStockfish } from "./stockfish";
@@ -269,9 +270,33 @@ export default function ChessField() {
             setOpening(newOpening);
     }
 
+    // The Lichess analysis board is probably the most handy tool for
+    // exploring the position.
     const analysisUrl = `https://lichess.org/analysis/pgn/${encodeURIComponent(chess.pgn)}?color=${longBoardOrientation}`;
-    const practiceUrl = `https://www.chess.com/practice/custom?color=${longBoardOrientation}&fen=rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR%20w%20KQkq%20-%200%201&is960=false&moveList=${encodeURIComponent(lanMoveList)}`;
-    
+    const lanMoveList = chess.history.lan.join(' ');
+    // Once you've reached a move with no games in the database, you
+    // may want to continue against a bot.  I haven't yet found URL
+    // parameters to choose the bot, so you'll need to do that manually.
+    const practiceUrl = `https://www.chess.com/practice/custom?color=${longBoardOrientation}&moveList=${encodeURIComponent(lanMoveList)}&fen=${encodeURIComponent(DEFAULT_POSITION)}&is960=false`;
+    // The Wikibooks theory book is a handy reference for the opening.
+    const movesForTheoryBook = chess.history.san.map((move, index) => {
+        // cf https://en.wikibooks.org/wiki/Chess_Opening_Theory/Organization , as of this writing,
+        // https://en.wikibooks.org/w/index.php?title=Chess_Opening_Theory/Organization&oldid=4092830
+        // It uses SAN, but no check or mate symbols, and it uses _ for White's move and ... for Black's.
+        // Technically, in Wikimedia terms, the page titles have spaces before White's move, but
+        // the URLs have underscores.
+        //
+        // Lichess has the text of the book in their analysis board, if you're on a documented line;
+        // they're pulling from this same wikibook (not in realtime).  But it's often handier to read it
+        // in Wikibooks,
+        const sanitizedMove = move.replace(/[+#]/g, '');
+        const moveNumber = Math.floor(index / 2) + 1;
+        const plain = index % 2 === 0 ? `${moveNumber}._${move}` : `${moveNumber}...${move}`;
+        const encoded = encodeURIComponent(plain);
+        return encoded;
+    }).join('/');
+    const theoryBookUrl = `https://en.wikibooks.org/wiki/Chess_Opening_Theory/${movesForTheoryBook}`;
+
     return (
         <Stack spacing={2}
                divider={<Divider orientation="vertical" flexItem />}>
@@ -309,6 +334,9 @@ export default function ChessField() {
                     </Link>
                     <Link href={practiceUrl} target="_blank" rel="noreferrer" sx={{ml: 2}}>
                         Practice on chess.com
+                    </Link>
+                    <Link href={theoryBookUrl} target="_blank" rel="noreferrer" sx={{ml: 2}}>
+                        Wikibooks Theory Book
                     </Link>
                 </Box>
                 <Typography>{numFound}</Typography>

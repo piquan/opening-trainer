@@ -29,6 +29,7 @@ function stateFromChess(chess) {
         'history': {
             'empty': history.length === 0,
             'obj': history,
+            'san': history.map(m => m.san),
             'lan': history.map(m => m.lan),
         },
         'gameOver': (chess.isCheckmate() ? 'Checkmate' :
